@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHP - Sistema de Declaración de Historial Personal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- INTERFAZ DE LA APLICACIÓN WEB (PANTALLA) -->
+    <div id="app-container" class="app-layout">
+        <!-- Barra Lateral Izquierda (Dashboard / Wizard Progress) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 22H22L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M12 6L4.5 20H19.5L12 6Z" fill="currentColor" opacity="0.2"/>
+                        <path d="M12 11V16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 18H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <div class="logo-text">
+                        <span class="app-brand">ARMADA BOLIVARIANA</span>
+                        <span class="app-sub-brand">Cuerpo de Ingenieros</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pasos del Wizard -->
+            <nav class="steps-nav">
+                <ul class="steps-list">
+                    <li class="step-item active" data-step="1">
+                        <div class="step-icon">1</div>
+                        <div class="step-details">
+                            <span class="step-title">Identificación</span>
+                            <span class="step-desc">Personales y Fisonomía</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="2">
+                        <div class="step-icon">2</div>
+                        <div class="step-details">
+                            <span class="step-title">Datos Militares</span>
+                            <span class="step-desc">Historial y Grado</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="3">
+                        <div class="step-icon">3</div>
+                        <div class="step-details">
+                            <span class="step-title">Familia y Viajes</span>
+                            <span class="step-desc">Núcleo y Exterior</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="4">
+                        <div class="step-icon">4</div>
+                        <div class="step-details">
+                            <span class="step-title">Ant. Laborales</span>
+                            <span class="step-desc">Últimos 10 Años</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="5">
+                        <div class="step-icon">5</div>
+                        <div class="step-details">
+                            <span class="step-title">Datos Sociales</span>
+                            <span class="step-desc">Gremios y Clubes</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="6">
+                        <div class="step-icon">6</div>
+                        <div class="step-details">
+                            <span class="step-title">Referencias</span>
+                            <span class="step-desc">Personales</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="7">
+                        <div class="step-icon">7</div>
+                        <div class="step-details">
+                            <span class="step-title">Educación</span>
+                            <span class="step-desc">Nivel Académico</span>
+                        </div>
+                    </li>
+                    <li class="step-item" data-step="8">
+                        <div class="step-icon">8</div>
+                        <div class="step-details">
+                            <span class="step-title">Administrativos</span>
+                            <span class="step-desc">Bienes, Armas y Detalle</span>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Acciones Rápidas -->
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="indicator-dot status-saved"></span>
+                    <span id="save-status-text">Guardado automáticamente</span>
+                </div>
+                <div class="utility-buttons">
+                    <button id="btn-export" class="btn-utility" title="Exportar Respaldo JSON">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                        Exportar
+                    </button>
+                    <button id="btn-import-trigger" class="btn-utility" title="Importar Respaldo JSON">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                        Importar
+                    </button>
+                    <input type="file" id="import-file" style="display: none;" accept=".json">
+                </div>
+                <button id="btn-clear" class="btn-danger-outline">Limpiar Formulario</button>
+            </div>
+        </aside>
+
+        <!-- Panel de Contenido Principal -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="header-titles">
+                    <h1>Declaración de Historial Personal (DHP)</h1>
+                    <p>Complete su información personal para generar de forma automatizada su expediente digital e impreso.</p>
+                </div>
+                <div class="theme-toggle-container">
+                    <button id="theme-toggle" class="btn-circle" title="Cambiar Tema">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Formulario Principal -->
+            <form id="dhp-form" class="form-wizard" autocomplete="off" onsubmit="event.preventDefault();">
+                
+                <!-- PASO 1: IDENTIFICACIÓN Y UBICACIÓN -->
+                <div class="form-step active" data-step="1">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 1 de 8</span>
+                            <h2>1) Datos de Identificación y Ubicación</h2>
+                            <p>Ingrese sus nombres completos, fecha de nacimiento, cédula e información de contacto.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <!-- Foto Upload Section -->
+                            <div class="photo-upload-section">
+                                <div class="avatar-preview-container">
+                                    <div class="avatar-preview" id="avatar-preview-box">
+                                        <svg class="avatar-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                        <img id="avatar-img" class="avatar-image" src="" alt="Foto carnet" style="display: none;">
+                                    </div>
+                                    <div class="upload-btn-wrapper">
+                                        <button class="btn-primary-sm" type="button">Subir Foto Carnet</button>
+                                        <input type="file" id="input-photo" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="photo-instructions">
+                                    <h4>Fotografía Oficial</h4>
+                                    <p>Por favor cargue una fotografía reciente tipo carnet con fondo blanco. Esta foto se incluirá automáticamente en la primera página de la planilla DHP.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid-form">
+                                <div class="form-group">
+                                    <label for="f_primer_apellido">Primer Apellido <span class="required">*</span></label>
+                                    <input type="text" id="f_primer_apellido">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_segundo_apellido">Segundo Apellido</label>
+                                    <input type="text" id="f_segundo_apellido">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_primer_nombre">Primer Nombre <span class="required">*</span></label>
+                                    <input type="text" id="f_primer_nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_segundo_nombre">Segundo Nombre</label>
+                                    <input type="text" id="f_segundo_nombre">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="f_fecha_nac">Fecha de Nacimiento <span class="required">*</span></label>
+                                    <input type="date" id="f_fecha_nac">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_lugar_nac">Lugar de Nacimiento <span class="required">*</span></label>
+                                    <input type="text" id="f_lugar_nac" placeholder="Ciudad, hospital, etc.">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_cedula">C.I.N. (Cédula de Identidad) <span class="required">*</span></label>
+                                    <input type="text" id="f_cedula" placeholder="Ej: V-12345678">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_edo_civil">Estado Civil <span class="required">*</span></label>
+                                    <select id="f_edo_civil">
+                                        <option value="">Seleccione...</option>
+                                        <option value="SOLTERO">SOLTERO(A)</option>
+                                        <option value="CASADO">CASADO(A)</option>
+                                        <option value="DIVORCIADO">DIVORCIADO(A)</option>
+                                        <option value="VIUDO">VIUDO(A)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="f_pais">País <span class="required">*</span></label>
+                                    <input type="text" id="f_pais" value="VENEZUELA">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_estado">Estado <span class="required">*</span></label>
+                                    <input type="text" id="f_estado">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_municipio">Municipio <span class="required">*</span></label>
+                                    <input type="text" id="f_municipio">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_profesion">Profesión / Oficio <span class="required">*</span></label>
+                                    <input type="text" id="f_profesion">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="f_religion">Religión <span class="required">*</span></label>
+                                    <input type="text" id="f_religion">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_num_control">N° Control Planilla (Si aplica)</label>
+                                    <input type="text" id="f_num_control" placeholder="Dejar en blanco si es nuevo">
+                                </div>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="f_direccion">Dirección Domiciliaria Completa <span class="required">*</span></label>
+                                <textarea id="f_direccion" rows="3" placeholder="Av, calle, casa/apto, sector, punto de referencia..."></textarea>
+                            </div>
+
+                            <div class="grid-form mt-3">
+                                <div class="form-group">
+                                    <label for="f_telefono_hab">Teléfono Habitación</label>
+                                    <input type="text" id="f_telefono_hab" placeholder="N/P si no posee">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_celular">Teléfono Celular <span class="required">*</span></label>
+                                    <input type="text" id="f_celular">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_otro_tlf">Otro Teléfono</label>
+                                    <input type="text" id="f_otro_tlf" placeholder="N/P si no posee">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_correo">Correo Electrónico <span class="required">*</span></label>
+                                    <input type="email" id="f_correo">
+                                </div>
+                            </div>
+
+                            <h3 class="section-divider-title">Redes Sociales (Indique 'N/P' si no posee)</h3>
+                            <div class="grid-form">
+                                <div class="form-group">
+                                    <label for="f_facebook">Facebook</label>
+                                    <input type="text" id="f_facebook" value="N/P">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_whatsapp">¿Posee Whatsapp?</label>
+                                    <select id="f_whatsapp">
+                                        <option value="SI">SI</option>
+                                        <option value="NO">NO</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_twitter">Twitter / X</label>
+                                    <input type="text" id="f_twitter" value="N/P">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_instagram">Instagram</label>
+                                    <input type="text" id="f_instagram" value="N/P">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_badoo">Badoo</label>
+                                    <input type="text" id="f_badoo" value="N/P">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_otras_redes">Otras Redes Sociales</label>
+                                    <input type="text" id="f_otras_redes" value="N/P">
+                                </div>
+                            </div>
+
+                            <h3 class="section-divider-title">Ubicación Administrativa a ser Adscrito</h3>
+                            <div class="grid-form">
+                                <div class="form-group">
+                                    <label for="f_cargo_nom">Cargo por Nombramiento <span class="required">*</span></label>
+                                    <input type="text" id="f_cargo_nom" placeholder="Ej: INGENIE DE PROYECTOS">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_cargo_ocupa">Cargo que Ocupa <span class="required">*</span></label>
+                                    <input type="text" id="f_cargo_ocupa" placeholder="Ej: AUXILIAR DE SOPORTE">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass mt-3">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 1 de 8</span>
+                            <h2>1.1) Señales Fisonómicas y Particulares</h2>
+                            <p>Detalle sus rasgos físicos característicos y cualquier seña particular.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="grid-form">
+                                <div class="form-group">
+                                    <label for="f_contextura">Contextura <span class="required">*</span></label>
+                                    <input type="text" id="f_contextura" placeholder="Ej: Delgada, Atlética, Fuerte, Robusta">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_color_piel">Color de Piel <span class="required">*</span></label>
+                                    <input type="text" id="f_color_piel" placeholder="Ej: Blanca, Morena, Trigueña">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_cara">Cara <span class="required">*</span></label>
+                                    <input type="text" id="f_cara" placeholder="Ej: Ovalada, Redonda, Alargada">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_cabello">Cabello <span class="required">*</span></label>
+                                    <input type="text" id="f_cabello" placeholder="Ej: Negro, Liso, Ondulado, Corto">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="f_frente">Frente <span class="required">*</span></label>
+                                    <input type="text" id="f_frente" placeholder="Ej: Amplia, Mediana, Estrecha">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_cejas">Cejas <span class="required">*</span></label>
+                                    <input type="text" id="f_cejas" placeholder="Ej: Pobladas, Escasas, Arqueadas">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_ojos">Ojos <span class="required">*</span></label>
+                                    <input type="text" id="f_ojos" placeholder="Ej: Cafés, Negros, Verdes">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_nariz">Nariz <span class="required">*</span></label>
+                                    <input type="text" id="f_nariz" placeholder="Ej: Recta, Respingada, Aguileña">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="f_labios">Labios <span class="required">*</span></label>
+                                    <input type="text" id="f_labios" placeholder="Ej: Gruesos, Medianos, Delgados">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_barba">Barba <span class="required">*</span></label>
+                                    <input type="text" id="f_barba" placeholder="Ej: No posee, Escasa, Poblada">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_estatura">Estatura (metros) <span class="required">*</span></label>
+                                    <input type="text" id="f_estatura" placeholder="Ej: 1.75">
+                                </div>
+                            </div>
+
+                            <h3 class="section-divider-title">1.2) Señales Particulares (Cicatrices, Tatuajes, Lunares, etc.)</h3>
+                            <div class="form-group">
+                                <label for="f_senales_partic">Explique detalladamente y describa las causas:</label>
+                                <textarea id="f_senales_partic" rows="4" placeholder="Ej: Cicatriz de 3cm en antebrazo derecho por cirugía. No posee tatuajes. Lunar visible en mejilla izquierda..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: DATOS MILITARES -->
+                <div class="form-step" data-step="2">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 2 de 8</span>
+                            <h2>2) Datos Militares</h2>
+                            <p>Especifique su historial militar.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="grid-form">
+                                <div class="form-group">
+                                    <label for="f_mil_arma">Arma o Servicio</label>
+                                    <input type="text" id="f_mil_arma" placeholder="Ej: Armada INGENIERIA (o N/A)">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_fecha_grado">Fecha de Grado</label>
+                                    <input type="date" id="f_mil_fecha_grado">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_promo">Nombre de la Promoción</label>
+                                    <input type="text" id="f_mil_promo" placeholder="Ej: N/A si no aplica">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_serial">Serial de Carnet Militar</label>
+                                    <input type="text" id="f_mil_serial" placeholder="Ej: N/A si no aplica">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_cumplio_servicio">Si no es Militar, ¿Cumplió con el Servicio Militar Obligatorio?</label>
+                                    <select id="f_mil_cumplio_servicio">
+                                        <option value="">Seleccione...</option>
+                                        <option value="SI">SI</option>
+                                        <option value="NO">NO</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_unidad">Unidad o Dependencia</label>
+                                    <input type="text" id="f_mil_unidad" placeholder="Ej: N/A">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_mil_comandante">Comandante de Batallón</label>
+                                    <input type="text" id="f_mil_comandante" placeholder="Ej: N/A">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 3: DATOS FAMILIARES Y VIAJES -->
+                <div class="form-step" data-step="3">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 3 de 8</span>
+                            <h2>3) Datos Familiares y Viajes</h2>
+                            <p>Registre los datos de sus familiares directos, allegados en el exterior y viajes.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <p class="section-subtitle">a) Anótese en orden: Padre, Madre, Hermanos, Hijos u otro familiar directo (Se incluirán hasta 5 en la planilla impresa).</p>
+                            
+                            <div id="familiares-container" class="repeating-rows">
+                                <!-- Filas de familiares cargadas dinámicamente -->
+                            </div>
+                            <button type="button" class="btn-secondary-sm" id="btn-add-familiar">+ Agregar Familiar</button>
+
+                            <h3 class="section-divider-title">b) Familiares y amigos que vivan en el Exterior</h3>
+                            <div id="familiares-exterior-container" class="repeating-rows">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <button type="button" class="btn-secondary-sm" id="btn-add-familiar-ext">+ Agregar Familiar en Ext.</button>
+
+                            <h3 class="section-divider-title">c) Viajes al Exterior</h3>
+                            <div id="viajes-container" class="repeating-rows">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <button type="button" class="btn-secondary-sm" id="btn-add-viaje">+ Agregar Registro de Viaje</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 4: ANTECEDENTES LABORALES -->
+                <div class="form-step" data-step="4">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 4 de 8</span>
+                            <h2>4) Antecedentes Laborales</h2>
+                            <p>Registre su historial de empleos de los últimos diez (10) años.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h3 class="section-title">4) Antecedentes Laborales (Últimos 10 años, en orden cronológico)</h3>
+                            <div id="laboral-container" class="repeating-rows">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <button type="button" class="btn-secondary-sm" id="btn-add-laboral">+ Agregar Empleo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 5: DATOS SOCIALES -->
+                <div class="form-step" data-step="5">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 5 de 8</span>
+                            <h2>5) Datos Sociales</h2>
+                            <p>Especifique sus afiliaciones a gremios, sindicatos, asociaciones y clubes deportivos.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h3 class="section-title">5) Datos Sociales (Gremios, sindicatos, asociaciones, clubes deportivos, etc.)</h3>
+                            <div id="social-container" class="repeating-rows">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                            <button type="button" class="btn-secondary-sm" id="btn-add-social">+ Agregar Organización</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 6: REFERENCIAS PERSONALES -->
+                <div class="form-step" data-step="6">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 6 de 8</span>
+                            <h2>6) Referencias Personales</h2>
+                            <p>Registre tres referencias personales que no sean familiares directos.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h3 class="section-title">6) Referencias Personales (Mínimo tres personas que no sean familiares directos)</h3>
+                            <div id="referencias-container" class="repeating-rows">
+                                <!-- Tres referencias obligatorias fijas en el formulario para facilitar llenado -->
+                                <div class="repeating-row card-sub-section">
+                                    <h4>Referencia Personal 1</h4>
+                                    <div class="grid-form">
+                                        <div class="form-group">
+                                            <label for="f_ref_nom_1">Nombre y Apellido <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_nom_1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_ci_1">Cédula de Identidad <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_ci_1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_dir_1">Dirección de Habitación o Trabajo <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_dir_1">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="repeating-row card-sub-section">
+                                    <h4>Referencia Personal 2</h4>
+                                    <div class="grid-form">
+                                        <div class="form-group">
+                                            <label for="f_ref_nom_2">Nombre y Apellido <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_nom_2">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_ci_2">Cédula de Identidad <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_ci_2">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_dir_2">Dirección de Habitación o Trabajo <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_dir_2">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="repeating-row card-sub-section">
+                                    <h4>Referencia Personal 3</h4>
+                                    <div class="grid-form">
+                                        <div class="form-group">
+                                            <label for="f_ref_nom_3">Nombre y Apellido <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_nom_3">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_ci_3">Cédula de Identidad <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_ci_3">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="f_ref_dir_3">Dirección de Habitación o Trabajo <span class="required">*</span></label>
+                                            <input type="text" id="f_ref_dir_3">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 7: DATOS EDUCATIVOS -->
+                <div class="form-step" data-step="7">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 7 de 8</span>
+                            <h2>7) Datos a Nivel Educativo</h2>
+                            <p>Complete las etapas educativas cursadas. Deje vacías las que no apliquen.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="edu-grid-inputs">
+                                <!-- Generaremos los inputs para Primaria, Secundaria, Diversificada, Universitaria, Maestría, Doctorado, Otros -->
+                                <div id="edu-inputs-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 8: DATOS ADMINISTRATIVOS Y OTROS -->
+                <div class="form-step" data-step="8">
+                    <div class="card glass">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 8 de 8</span>
+                            <h2>8) Datos Administrativos y Preguntas de Seguridad</h2>
+                            <p>Registre información sobre cuentas, bienes, armas y complete el cuestionario general.</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h3 class="section-title">8) Cuentas, Vehículos y Armas</h3>
+                            
+                            <!-- Cuentas Bancarias -->
+                            <div class="card-sub-section">
+                                <h4>Cuentas Bancarias</h4>
+                                <div class="grid-form">
+                                    <div class="form-group">
+                                        <label for="f_adm_posee_cuentas">¿Posee usted cuentas bancarias?</label>
+                                        <select id="f_adm_posee_cuentas">
+                                            <option value="NO">NO</option>
+                                            <option value="SI">SI</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_adm_cant_cuentas">Cantidad de Cuentas</label>
+                                        <input type="number" id="f_adm_cant_cuentas" value="0" min="0">
+                                    </div>
+                                </div>
+                                <div class="form-group mt-2">
+                                    <label for="f_adm_desc_cuentas">Describa en qué Bancos, tipo de la cuenta y Números de cuenta:</label>
+                                    <textarea id="f_adm_desc_cuentas" rows="2" placeholder="Ej: Banco de Venezuela, Corriente N° 0102..., Banco Mercantil..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Vehículos -->
+                            <div class="card-sub-section mt-3">
+                                <h4>Vehículos</h4>
+                                <div class="grid-form">
+                                    <div class="form-group">
+                                        <label for="f_adm_posee_vehiculo">¿Posee vehículo?</label>
+                                        <select id="f_adm_posee_vehiculo">
+                                            <option value="NO">NO</option>
+                                            <option value="SI">SI</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_marca">Marca</label>
+                                        <input type="text" id="f_veh_marca" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_ano">Año</label>
+                                        <input type="text" id="f_veh_ano" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_modelo">Modelo</label>
+                                        <input type="text" id="f_veh_modelo" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_placa">Placa N°</label>
+                                        <input type="text" id="f_veh_placa" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_tipo">Tipo Uso</label>
+                                        <input type="text" id="f_veh_tipo" value="N/A" placeholder="Ej: Particular">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_veh_color">Color</label>
+                                        <input type="text" id="f_veh_color" value="N/A">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Armas de Fuego -->
+                            <div class="card-sub-section mt-3">
+                                <h4>Armas de Fuego</h4>
+                                <div class="grid-form">
+                                    <div class="form-group">
+                                        <label for="f_adm_posee_arma">¿Porta usted arma de fuego?</label>
+                                        <select id="f_adm_posee_arma">
+                                            <option value="NO">NO</option>
+                                            <option value="SI">SI</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_arma_marca">Marca</label>
+                                        <input type="text" id="f_arma_marca" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_arma_modelo">Modelo</label>
+                                        <input type="text" id="f_arma_modelo" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_arma_serial">Serial</label>
+                                        <input type="text" id="f_arma_serial" value="N/A">
+                                    </div>
+                                    <div class="form-group col-span-2">
+                                        <label for="f_arma_permiso">N° Permiso de Porte de Arma</label>
+                                        <input type="text" id="f_arma_permiso" value="N/A">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 class="section-divider-title">Preguntas e Historial General</h3>
+                            <div class="card-sub-section">
+                                <div class="grid-form">
+                                    <div class="form-group">
+                                        <label for="f_seg_detenido">¿Ha sido detenido alguna vez?</label>
+                                        <select id="f_seg_detenido">
+                                            <option value="NO">NO</option>
+                                            <option value="SI">SI</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-span-2">
+                                        <label for="f_det_causa">Causa de Detención</label>
+                                        <input type="text" id="f_det_causa" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_det_cuerpo">Cuerpo Policial</label>
+                                        <input type="text" id="f_det_cuerpo" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_det_fecha">Fecha de Detención</label>
+                                        <input type="text" id="f_det_fecha" value="N/A" placeholder="Ej: DD/MM/AAAA o N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_det_lugar">Lugar de Detención</label>
+                                        <input type="text" id="f_det_lugar" value="N/A">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-sub-section mt-3">
+                                <div class="grid-form">
+                                    <div class="form-group">
+                                        <label for="f_seg_partido">¿Pertenece o perteneció a algún partido político?</label>
+                                        <select id="f_seg_partido">
+                                            <option value="NO">NO</option>
+                                            <option value="SI">SI</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_part_especifique">Especifique Partido</label>
+                                        <input type="text" id="f_part_especifique" value="N/A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="f_part_lugar">Lugar donde se inscribió</label>
+                                        <input type="text" id="f_part_lugar" value="N/A">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-sub-section mt-3">
+                                <div class="form-group">
+                                    <label for="f_seg_incidente">¿Ha ocurrido en su vida algún acontecimiento o incidente especial que requiera explicación?</label>
+                                    <textarea id="f_seg_incidente" rows="2" placeholder="Ej: No, ninguno..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="grid-form mt-3">
+                                <div class="form-group col-span-3">
+                                    <label for="f_fre_sitios">Mencione algunos sitios que frecuenta en sus momentos libres <span class="required">*</span></label>
+                                    <input type="text" id="f_fre_sitios" placeholder="Ej: Parques, centros comerciales, biblioteca nacional, etc.">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_fre_hobby">Hobby favorito <span class="required">*</span></label>
+                                    <input type="text" id="f_fre_hobby" placeholder="Ej: Lectura, Ajedrez">
+                                </div>
+                                <div class="form-group">
+                                    <label for="f_fre_deporte">Deporte favorito y cuál practica <span class="required">*</span></label>
+                                    <input type="text" id="f_fre_deporte" placeholder="Ej: Beisbol, Futbol">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Navegación del Wizard -->
+                <div class="wizard-buttons">
+                    <button type="button" id="btn-prev" class="btn-secondary" style="display: none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Atrás
+                    </button>
+                    
+                    <button type="button" id="btn-next" class="btn-primary">
+                        Siguiente
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                    
+                    <button type="button" id="btn-print" class="btn-success" style="display: none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        Generar Planilla Oficial
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- VISTA OFICIAL DE IMPRESIÓN (OCULTA EN PANTALLA, ACTIVA EN `@media print`) -->
+    <div id="print-sheet-container" class="printable-sheet">
+        
+        <!-- PÁGINA 1 -->
+        <section class="print-page" id="print-page-1">
+            <!-- Encabezado Militar Oficial -->
+            <div class="print-header">
+                <div class="header-photo-box">
+                    <div class="photo-placeholder-print" id="print-photo-box">
+                        <span class="photo-txt">FOTO</span>
+                        <img id="print-avatar-img" class="photo-img-print" src="" alt="FOTO" style="display: none;">
+                    </div>
+                </div>
+                <div class="header-text-print">
+                    <div class="rep-title">REPÚBLICA BOLIVARIANA DE VENEZUELA</div>
+                    <div class="min-title">MINISTERIO DEL PODER POPULAR PARA LA DEFENSA</div>
+                    <div class="arm-title">ARMADA BOLIVARIANA</div>
+                    <div class="ing-title">CUERPO DE INGENIEROS DE LA ARMADA BOLIVARIANA</div>
+                    <div class="com-title">COMANDO</div>
+                </div>
+                <div class="header-number-box">
+                    <div class="control-num-lbl">N° <span id="print_num_control" class="fill-in">___________</span></div>
+                </div>
+            </div>
+
+            <div class="document-title-box">
+                <h1 class="main-doc-title">DECLARACIÓN DE HISTORIAL PERSONAL</h1>
+            </div>
+
+            <!-- Instrucciones de Llenado -->
+            <div class="print-instructions">
+                <h3 class="inst-heading">Instrucciones:</h3>
+                <ol class="inst-list">
+                    <li>Certifico que las informaciones que suministradas son verdaderas y completas, hechas de buena Fe.</li>
+                    <li>Entiendo que cualquier declaración falsa en este formulario manifestará duda en mi seriedad como profesional.</li>
+                    <li>Tomada como todas las interrogantes deben ser contestadas.</li>
+                    <li>La información suministrada se mantendrá en la mayor reserva y solo será de uso oficial.</li>
+                </ol>
+            </div>
+
+            <!-- Seccion 1: Identificacion -->
+            <div class="print-section">
+                <h2 class="print-section-title">1) IDENTIFICACIÓN.</h2>
+                <table class="grid-table cell-padding-sm">
+                    <tr>
+                        <td class="col-25 bg-gray cell-center text-bold font-xs">PRIMER APELLIDO</td>
+                        <td class="col-25 bg-gray cell-center text-bold font-xs">SEGUNDO APELLIDO</td>
+                        <td class="col-25 bg-gray cell-center text-bold font-xs">PRIMER NOMBRE</td>
+                        <td class="col-25 bg-gray cell-center text-bold font-xs">SEGUNDO NOMBRE</td>
+                    </tr>
+                    <tr class="row-h-md">
+                        <td id="p_primer_apellido" class="cell-center text-upper font-sm"></td>
+                        <td id="p_segundo_apellido" class="cell-center text-upper font-sm"></td>
+                        <td id="p_primer_nombre" class="cell-center text-upper font-sm"></td>
+                        <td id="p_segundo_nombre" class="cell-center text-upper font-sm"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-15 bg-gray text-bold font-xs">Fecha de Nacimiento:</td>
+                        <td id="p_fecha_nac" class="col-30 font-sm cell-center"></td>
+                        <td class="col-15 bg-gray text-bold font-xs">Lugar de Nacimiento:</td>
+                        <td id="p_lugar_nac" class="col-40 font-sm text-upper"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-10 bg-gray text-bold font-xs">Municipio:</td>
+                        <td id="p_municipio" class="col-40 font-sm text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Estado:</td>
+                        <td id="p_estado" class="col-40 font-sm text-upper"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-10 bg-gray text-bold font-xs">País:</td>
+                        <td id="p_pais" class="col-40 font-sm text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">C.I.N.:</td>
+                        <td id="p_cedula" class="col-40 font-sm text-upper text-bold"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-lg">
+                        <td class="col-15 bg-gray text-bold font-xs">Dirección Domiciliaria:</td>
+                        <td id="p_direccion" class="col-85 font-sm text-upper" colspan="3"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-15 bg-gray text-bold font-xs">Teléfonos hab:</td>
+                        <td id="p_telefono_hab" class="col-18 font-sm cell-center text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Celular:</td>
+                        <td id="p_celular" class="col-22 font-sm cell-center"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Otro tlf:</td>
+                        <td id="p_otro_tlf" class="col-25 font-sm cell-center text-upper"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-15 bg-gray text-bold font-xs">Correos electrónicos:</td>
+                        <td id="p_correo" class="col-85 font-sm" colspan="3"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-10 bg-gray text-bold font-xs">Profesión:</td>
+                        <td id="p_profesion" class="col-30 font-sm text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Religión:</td>
+                        <td id="p_religion" class="col-20 font-sm text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Edo civil:</td>
+                        <td id="p_edo_civil" class="col-20 font-sm text-upper"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-10 bg-gray text-bold font-xs">Facebook:</td>
+                        <td id="p_facebook" class="col-25 font-sm text-upper"></td>
+                        <td class="col-12 bg-gray text-bold font-xs">Whatsapp:</td>
+                        <td class="col-18 font-sm text-upper cell-center">
+                            <span class="checkbox-container">Si: <span id="p_whatsapp_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_whatsapp_no" class="check-box"></span></span>
+                        </td>
+                        <td class="col-10 bg-gray text-bold font-xs">Twitter:</td>
+                        <td id="p_twitter" class="col-25 font-sm text-upper"></td>
+                    </tr>
+                </table>
+
+                <table class="grid-table cell-padding-sm border-t-none">
+                    <tr class="row-h-md">
+                        <td class="col-10 bg-gray text-bold font-xs">Instagram:</td>
+                        <td id="p_instagram" class="col-25 font-sm text-upper"></td>
+                        <td class="col-12 bg-gray text-bold font-xs">Badoo:</td>
+                        <td id="p_badoo" class="col-18 font-sm text-upper"></td>
+                        <td class="col-10 bg-gray text-bold font-xs">Otros:</td>
+                        <td id="p_otras_redes" class="col-25 font-sm text-upper"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Ubicacion administrativa a ser adscrito -->
+            <div class="print-section">
+                <table class="grid-table cell-padding-sm">
+                    <tr>
+                        <td class="bg-gray cell-center text-bold font-xs" colspan="3">Ubicación administrativa a ser adscrito:</td>
+                    </tr>
+                    <tr class="row-h-md">
+                        <td class="col-33 font-xxs bg-light">Cargo por nombramiento: <span id="p_cargo_nom" class="font-xs text-bold text-upper display-block mt-1"></span></td>
+                        <td class="col-33 font-xxs bg-light">Cargo que Ocupa: <span id="p_cargo_ocupa" class="font-xs text-bold text-upper display-block mt-1"></span></td>
+                        <td class="col-34 font-xxs bg-light">Firma Analista: </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Seccion 1.1: Senales Fisonomicas -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">1.1) Señales Fisonómicas:</h2>
+                <table class="grid-table cell-padding-xs">
+                    <tr class="bg-gray font-xxs text-bold cell-center">
+                        <td>Contextura:</td>
+                        <td>Color:</td>
+                        <td>Cara:</td>
+                        <td>Cabello:</td>
+                    </tr>
+                    <tr class="row-h-sm cell-center font-xs text-upper">
+                        <td id="p_contextura"></td>
+                        <td id="p_color_piel"></td>
+                        <td id="p_cara"></td>
+                        <td id="p_cabello"></td>
+                    </tr>
+                    <tr class="bg-gray font-xxs text-bold cell-center">
+                        <td>Frente:</td>
+                        <td>Cejas:</td>
+                        <td>Ojos:</td>
+                        <td>Nariz:</td>
+                    </tr>
+                    <tr class="row-h-sm cell-center font-xs text-upper">
+                        <td id="p_frente"></td>
+                        <td id="p_cejas"></td>
+                        <td id="p_ojos"></td>
+                        <td id="p_nariz"></td>
+                    </tr>
+                    <tr class="bg-gray font-xxs text-bold cell-center">
+                        <td>Labios:</td>
+                        <td>Barba:</td>
+                        <td>Estatura:</td>
+                        <td class="bg-white"></td>
+                    </tr>
+                    <tr class="row-h-sm cell-center font-xs text-upper">
+                        <td id="p_labios"></td>
+                        <td id="p_barba"></td>
+                        <td id="p_estatura"></td>
+                        <td class="bg-white"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Seccion 1.1 bis: Senales Particulares -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">1.1) Señales Particulares (Cicatrices, tatuajes, Lunares)</h2>
+                <table class="grid-table cell-padding-sm">
+                    <tr>
+                        <td class="bg-gray text-bold font-xxs col-15 valign-top">Explique las causas:</td>
+                        <td id="p_senales_partic" class="font-xs text-upper row-h-lg valign-top col-85"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Footer con numero de pagina -->
+            <div class="print-footer">
+                <div class="page-num">1 de 4</div>
+            </div>
+        </section>
+
+        <!-- PÁGINA 2 -->
+        <section class="print-page" id="print-page-2">
+            <!-- Seccion 2: Datos Militares -->
+            <div class="print-section">
+                <h2 class="print-section-title">2) DATOS MILITARES.</h2>
+                <table class="grid-table cell-padding-xs">
+                    <tr>
+                        <td class="col-30 font-xxs bg-gray text-bold">Arma o servicio: <span id="p_mil_arma" class="font-xs display-block text-upper text-normal mt-1"></span></td>
+                        <td class="col-40 font-xxs bg-gray text-bold">INGENIERIA</td>
+                        <td class="col-30 font-xxs bg-gray text-bold">Fecha de grado: <span id="p_mil_fecha_grado" class="font-xs display-block text-normal mt-1"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-t-none">
+                    <tr>
+                        <td class="col-50 font-xxs text-bold">Nombre de la Promoción: <span id="p_mil_promo" class="font-xs text-normal text-upper display-block mt-1"></span></td>
+                        <td class="col-50 font-xxs text-bold">Serial de carnet militar: <span id="p_mil_serial" class="font-xs text-normal text-upper display-block mt-1"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-t-none">
+                    <tr>
+                        <td class="col-60 font-xxs text-bold">Si no es Militar, ¿Cumplió con el Servicio Militar Obligatorio?</td>
+                        <td class="col-40 font-xs cell-center text-bold">
+                            <span class="checkbox-container">Si: <span id="p_mil_servicio_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_mil_servicio_no" class="check-box"></span></span>
+                        </td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-t-none">
+                    <tr>
+                        <td class="col-50 font-xxs text-bold">Unidad o Dependencia: <span id="p_mil_unidad" class="font-xs text-normal text-upper display-block mt-1"></span></td>
+                        <td class="col-50 font-xxs text-bold">Comandante de Batallón: <span id="p_mil_comandante" class="font-xs text-normal text-upper display-block mt-1"></span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Seccion 3: Datos Familiares -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">3) DATOS FAMILIARES.</h2>
+                <h3 class="print-subsection-title">a) Anótese en orden: Padre, Madre, Hermanos, Hijos u otro.</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-fam-table">
+                    <thead>
+                        <tr>
+                            <td class="col-20">PRIMER APELLIDO</td>
+                            <td class="col-20">SEGUNDO APELLIDO</td>
+                            <td class="col-20">PRIMER NOMBRE</td>
+                            <td class="col-20">SEGUNDO NOMBRE</td>
+                            <td class="col-20">C.I.V</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Generado dinámicamente con JS, fijo 5 filas para mantener formato exacto -->
+                    </tbody>
+                </table>
+
+                <h3 class="print-subsection-title mt-1">b) Familiares y amigos que vivan en el Exterior</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-fam-ext-table">
+                    <thead>
+                        <tr>
+                            <td class="col-30">Nombre y Apellido</td>
+                            <td class="col-15">CI N°</td>
+                            <td class="col-15">Parentesco</td>
+                            <td class="col-10">Edad</td>
+                            <td class="col-30">Dirección</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Fijo 3 filas -->
+                    </tbody>
+                </table>
+
+                <h3 class="print-subsection-title mt-1">c) Viajes al exterior</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-viajes-table">
+                    <thead>
+                        <tr>
+                            <td class="col-20" colspan="2">Fechas</td>
+                            <td class="col-25" rowspan="2">País Visitado</td>
+                            <td class="col-25" rowspan="2">Motivo del viaje</td>
+                            <td class="col-30" rowspan="2">Dirección de Residencia u Hotel visitado</td>
+                        </tr>
+                        <tr>
+                            <td class="col-10 border-t-grid">Desde</td>
+                            <td class="col-10 border-t-grid">Hasta</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Fijo 3 filas -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Seccion 4: Antecedentes Laborales -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">4) ANTECEDENTES LABORALES.</h2>
+                <h3 class="print-subsection-title">Indique en orden cronológico los empleos o cargos durante los últimos diez (10) años, incluyendo el actual.</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-laboral-table">
+                    <thead>
+                        <tr>
+                            <td class="col-20" colspan="2">Fechas</td>
+                            <td class="col-25" rowspan="2">Cargo Desempeñados</td>
+                            <td class="col-30" rowspan="2">Nombre y Dirección de la Empresa o Patrón</td>
+                            <td class="col-25" rowspan="2">Motivo del retiro</td>
+                        </tr>
+                        <tr>
+                            <td class="col-10 border-t-grid">Desde</td>
+                            <td class="col-10 border-t-grid">Hasta</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Fijo 4 filas -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Seccion 5: Datos Sociales -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">5) DATOS SOCIALES.</h2>
+                <h3 class="print-subsection-title">Indique las Organizaciones, Gremios, Sindicatos, Asociaciones Culturales, Deportiva etc. A las cuales haya pertenecido o pertenece.</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-social-table">
+                    <thead>
+                        <tr>
+                            <td class="col-30">Nombre de la Organización</td>
+                            <td class="col-30">Dirección</td>
+                            <td class="col-40">Actividades de la Organización</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Fijo 3 filas -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer con numero de pagina -->
+            <div class="print-footer">
+                <div class="page-num">2 de 4</div>
+            </div>
+        </section>
+
+        <!-- PÁGINA 3 -->
+        <section class="print-page" id="print-page-3">
+            <!-- Seccion 6: Referencias Personales -->
+            <div class="print-section">
+                <h2 class="print-section-title">6) REFERENCIAS PERSONALES.</h2>
+                <h3 class="print-subsection-title">No incluye aquellas personas que por su ubicación y cargos, sean de difícil acceso, tales como Presidente de la República, Ministros, Gobernadores entre otros. (Al igual que familiares o personas que habiten fuera del País) Mínimo tres (3) personas.</h3>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray">
+                    <thead>
+                        <tr>
+                            <td class="col-35">Nombre y Apellido</td>
+                            <td class="col-25">Cedula de identidad</td>
+                            <td class="col-40">Dirección de Habitación o trabajo</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <tr class="row-h-md">
+                            <td id="p_ref_nom_1" class="text-left cell-padding-l"></td>
+                            <td id="p_ref_ci_1"></td>
+                            <td id="p_ref_dir_1" class="text-left cell-padding-l"></td>
+                        </tr>
+                        <tr class="row-h-md">
+                            <td id="p_ref_nom_2" class="text-left cell-padding-l"></td>
+                            <td id="p_ref_ci_2"></td>
+                            <td id="p_ref_dir_2" class="text-left cell-padding-l"></td>
+                        </tr>
+                        <tr class="row-h-md">
+                            <td id="p_ref_nom_3" class="text-left cell-padding-l"></td>
+                            <td id="p_ref_ci_3"></td>
+                            <td id="p_ref_dir_3" class="text-left cell-padding-l"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Seccion 7: Datos Educativos -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">7) DATOS A NIVEL EDUCATIVO.</h2>
+                <table class="grid-table cell-padding-xs cell-center font-xxs text-bold bg-gray" id="print-educativo-table">
+                    <thead>
+                        <tr>
+                            <td class="col-20" rowspan="2">Etapa</td>
+                            <td class="col-16" colspan="2">Fecha</td>
+                            <td class="col-24" rowspan="2">Nombre del Instituto</td>
+                            <td class="col-20" rowspan="2">Dirección</td>
+                            <td class="col-20" rowspan="2">Observaciones</td>
+                        </tr>
+                        <tr>
+                            <td class="col-8 border-t-grid">Desde</td>
+                            <td class="col-8 border-t-grid">Hasta</td>
+                        </tr>
+                    </thead>
+                    <tbody class="font-xs text-normal text-upper">
+                        <!-- Generado dinámicamente con JS, fijo 7 etapas -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Seccion 8: Datos Administrativos -->
+            <div class="print-section mt-1">
+                <h2 class="print-section-title">8) DATOS ADMINISTRATIVOS.</h2>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-30 font-xxs text-bold">¿Posee usted, cuentas bancarias?</td>
+                        <td class="col-20 font-xs cell-center">
+                            <span class="checkbox-container">Si: <span id="p_adm_cuentas_si" class="check-box font-bold"></span></span>
+                            <span class="checkbox-container">No: <span id="p_adm_cuentas_no" class="check-box font-bold"></span></span>
+                        </td>
+                        <td class="col-35 font-xxs text-bold cell-right">¿Cantidad de Cuentas?</td>
+                        <td id="p_adm_cant_cuentas" class="col-15 font-xs cell-center font-bold"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="bg-gray font-xxs text-bold" colspan="2">¿Describa en que Bancos, tipo de la cuenta y Números de la cuenta?</td>
+                    </tr>
+                    <tr class="row-h-md">
+                        <td id="p_adm_desc_cuentas" class="font-xs text-upper text-left cell-padding-l" colspan="2"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-25 font-xxs text-bold">¿Posee usted vehículo?</td>
+                        <td class="col-25 font-xs cell-center">
+                            <span class="checkbox-container">Si: <span id="p_veh_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_veh_no" class="check-box"></span></span>
+                        </td>
+                        <td class="col-35 font-xxs text-bold">Marca: <span id="p_veh_marca" class="font-xs text-normal text-upper font-bold"></span></td>
+                        <td class="col-15 font-xxs text-bold">AÑO: <span id="p_veh_ano" class="font-xs text-normal font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-35 font-xxs text-bold">Modelo: <span id="p_veh_modelo" class="font-xs text-normal text-upper font-bold"></span></td>
+                        <td class="col-30 font-xxs text-bold">Placa N°: <span id="p_veh_placa" class="font-xs text-normal text-upper font-bold"></span></td>
+                        <td class="col-35 font-xxs text-bold">TIPO USO: <span id="p_veh_tipo" class="font-xs text-normal text-upper font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold" colspan="3">Color: <span id="p_veh_color" class="font-xs text-normal text-upper font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-30 font-xxs text-bold">¿Porta usted arma de fuego?</td>
+                        <td class="col-20 font-xs cell-center">
+                            <span class="checkbox-container">Si: <span id="p_arma_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_arma_no" class="check-box"></span></span>
+                        </td>
+                        <td class="col-50 bg-white" colspan="2"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-30 font-xxs text-bold">Marca: <span id="p_arma_marca" class="font-xs text-normal text-upper font-bold"></span></td>
+                        <td class="col-35 font-xxs text-bold">Modelo: <span id="p_arma_modelo" class="font-xs text-normal text-upper font-bold"></span></td>
+                        <td class="col-35 font-xxs text-bold">Serial: <span id="p_arma_serial" class="font-xs text-normal text-upper font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold">Nº del permiso de porte de arma: <span id="p_arma_permiso" class="font-xs text-normal text-upper font-bold"></span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Footer con numero de pagina -->
+            <div class="print-footer">
+                <div class="page-num">3 de 4</div>
+            </div>
+        </section>
+
+        <!-- PÁGINA 4 -->
+        <section class="print-page" id="print-page-4">
+            <!-- Continuacion Seccion 8: Detalle general -->
+            <div class="print-section">
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-30 font-xxs text-bold">¿Ha sido detenido alguna vez?</td>
+                        <td class="col-20 font-xs cell-center">
+                            <span class="checkbox-container">Si: <span id="p_detenido_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_detenido_no" class="check-box"></span></span>
+                        </td>
+                        <td class="col-50 bg-white" colspan="2"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold">¿Causa? <span id="p_det_causa" class="font-xs text-normal text-upper display-block mt-1 font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-50 font-xxs text-bold">¿Cuál Cuerpo Policial? Fecha: <span id="p_det_cuerpo_fecha" class="font-xs text-normal text-upper display-block mt-1 font-bold"></span></td>
+                        <td class="col-50 font-xxs text-bold">Lugar: <span id="p_det_lugar" class="font-xs text-normal text-upper display-block mt-1 font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-50 font-xxs text-bold">¿Pertenece o perteneció usted a algún partido político?</td>
+                        <td class="col-15 font-xs cell-center">
+                            <span class="checkbox-container">Si: <span id="p_partido_si" class="check-box"></span></span>
+                            <span class="checkbox-container">No: <span id="p_partido_no" class="check-box"></span></span>
+                        </td>
+                        <td class="col-35 bg-white"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold">¿Especifique Partido? <span id="p_part_especifique" class="font-xs text-normal text-upper display-block mt-1 font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold">¿Lugar donde se inscribió? <span id="p_part_lugar" class="font-xs text-normal text-upper display-block mt-1 font-bold"></span></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="font-xxs text-bold">¿Ha ocurrido en su vida un acontecimiento o incidente que requiera una explicación o mención especial?</td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-md">
+                        <td id="p_seg_incidente" class="font-xs text-upper text-left cell-padding-l valign-top"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-70 font-xxs text-bold">¿Mencione unos de los sitios que usted, frecuenta en sus momentos libres?</td>
+                        <td id="p_fre_sitios" class="col-30 font-xs text-upper text-normal font-bold"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-30 font-xxs text-bold">¿Cuál es su hobby?</td>
+                        <td id="p_fre_hobby" class="col-70 font-xs text-upper text-normal font-bold"></td>
+                    </tr>
+                </table>
+                <table class="grid-table cell-padding-xs">
+                    <tr class="row-h-sm">
+                        <td class="col-45 font-xxs text-bold">¿Cuál es su deporte favorito y cual practica?</td>
+                        <td id="p_fre_deporte" class="col-55 font-xs text-upper text-normal font-bold"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Observaciones y Boletas de Analista -->
+            <div class="print-observations-box">
+                <h3 class="obs-title">OBSERVACIONES</h3>
+                <p class="obs-paragraph">
+                    La analista de Inteligencia o quien supervise el proceso de selección, debe velar porque la Declaración de Historial Personal (DHP), sea llenada por el aspirante al cargo sin obviar ninguna interrogante. Así mismo podrá hacer recomendaciones en cuanto a cualquier observación que contribuya con el desarrollo de la Investigación de Seguridad Personal (ISP). Si la planilla no es llenada en su totalidad será responsable el analista que efectué la entrevista.
+                </p>
+            </div>
+
+            <!-- Firmas y Fecha -->
+            <div class="print-signatures-row">
+                <div class="signature-block">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Firma del Declarante</div>
+                </div>
+                <div class="date-block">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Fecha</div>
+                </div>
+            </div>
+
+            <!-- Huellas Dactilares -->
+            <div class="print-fingerprints-box">
+                <div class="fingerprint-item">
+                    <div class="fp-title">PI</div>
+                    <div class="fp-box"></div>
+                    <div class="fp-desc">Pulgar Izquierdo</div>
+                </div>
+                <div class="fingerprint-item">
+                    <div class="fp-title">PD</div>
+                    <div class="fp-box"></div>
+                    <div class="fp-desc">Pulgar Derecho</div>
+                </div>
+            </div>
+
+            <!-- Footer con numero de pagina -->
+            <div class="print-footer">
+                <div class="page-num">4 de 4</div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Script de lógica -->
+    <script src="app.js"></script>
+</body>
+</html>
