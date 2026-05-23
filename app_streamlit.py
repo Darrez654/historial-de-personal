@@ -1,5 +1,14 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
+
+# Esta línea es la que hace la magia de ampliar el diseño
+st.set_page_config(
+    page_title="DHP - Sistema de Declaración de Historial Personal",
+    page_icon="⚓",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # pyrefly: ignore [missing-import]
 import streamlit.components.v1 as components
 import json
@@ -9,14 +18,6 @@ import pandas as pd
 
 import database as db
 from api_server import API_PORT, start_api_server
-
-# Configuración de la página de Streamlit
-st.set_page_config(
-    page_title="DHP - Sistema de Declaración de Historial Personal",
-    page_icon="⚓",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Estilo personalizado para la interfaz de Streamlit
 st.markdown("""
