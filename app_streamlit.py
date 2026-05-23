@@ -292,8 +292,8 @@ def get_self_contained_html():
             
         # Reemplazar la referencia de style.css por el CSS inyectado + parche embed Streamlit
         html = html.replace(
-            '<link rel="stylesheet" href="style.css">',
-            f'<style>\n{css}\n</style>\n{DHP_EMBED_CSS}',
+                '<link rel="stylesheet" href="style.css?v=2.0">',
+                f'<style>\n{css}\n</style>\n{DHP_EMBED_CSS}',
         )
         # Reemplazar la referencia de app.js por el JS inyectado y añadir datos precargados antes
         html = html.replace('<script src="app.js"></script>', f'{preloaded_script}<script>\n{js}\n</script>')
