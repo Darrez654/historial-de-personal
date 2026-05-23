@@ -1,52 +1,93 @@
 @echo off
-title DHP - Servidor Streamlit
-echo Iniciando el entorno Streamlit para la aplicacion DHP...
+setlocal EnableExtensions
+title DHP - Sistema Historial Personal
+
+:: Siempre abrir en la carpeta donde esta este .bat
+cd /d "%~dp0"
+
+echo ============================================
+echo   DHP - Declaracion de Historial Personal
+echo ============================================
+echo Carpeta: %CD%
 echo.
 
-:: Verificar si Python está instalado
+set "PYTHON_CMD="
+
+:: Preferir el lanzador "py" de Windows (mas fiable que el alias de la Store)
+where py >nul 2>nul
+if %errorlevel% equ 0 (
+    py -3 -c "import sys" >nul 2>nul
+    if not errorlevel 1 (
+        set "PYTHON_CMD=py -3"
+        goto python_ok
+    )
+)
+
 where python >nul 2>nul
-if %errorlevel% neq 0 (
-    where py >nul 2>nul
-    if %errorlevel% neq 0 (
-        echo [ERROR] No se encontro Python en el sistema.
-        echo Por favor, instale Python (https://www.python.org/) y asegurese de marcar la opcion "Add Python to PATH" durante la instalacion.
-        echo.
-        pause
-        exit /b 1
-    ) else (
-        set PYTHON_CMD=py
+if %errorlevel% equ 0 (
+    python -c "import sys" >nul 2>nul
+    if not errorlevel 1 (
+        set "PYTHON_CMD=python"
+        goto python_ok
     )
-) else (
-    set PYTHON_CMD=python
 )
 
-:: Verificar si Streamlit está instalado
-%PYTHON_CMD% -c "import streamlit" >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [+] Streamlit no esta instalado en este entorno de Python.
-    echo [+] Intentando instalar Streamlit automaticamente mediante pip...
-    echo.
-    %PYTHON_CMD% -m pip install streamlit
-    if %errorlevel% neq 0 (
-        echo.
-        echo [ERROR] No se pudo instalar Streamlit. Verifique su conexion a internet o ejecute:
-        echo   %PYTHON_CMD% -m pip install streamlit
-        echo.
-        pause
-        exit /b 1
-    )
-    echo.
-    echo [+] Streamlit instalado correctamente.
-    echo.
-)
-
-echo [+] Ejecutando: streamlit run app_streamlit.py
+echo [ERROR] No se encontro Python usable en este equipo.
 echo.
+echo Solucion:
+echo   1. Instale Python desde https://www.python.org/downloads/
+echo   2. Durante la instalacion marque "Add python.exe to PATH"
+echo   3. Desactive el alias de la Microsoft Store:
+echo      Configuracion - Aplicaciones - Alias de ejecucion
+echo      Desactivar "python.exe" y "python3.exe"
+echo.
+goto fin_error
+
+:python_ok
+echo [OK] Python detectado: %PYTHON_CMD%
+echo.
+
+if not exist "app_streamlit.py" (
+    echo [ERROR] No se encuentra app_streamlit.py en esta carpeta.
+    echo Ejecute este archivo desde la carpeta del proyecto DHP.
+    goto fin_error
+)
+
+if exist requirements.txt (
+    echo [+] Instalando o actualizando dependencias...
+    %PYTHON_CMD% -m pip install -r requirements.txt
+    if errorlevel 1 (
+        echo.
+        echo [ERROR] Fallo la instalacion de dependencias.
+        goto fin_error
+    )
+    echo.
+) else (
+    echo [+] Instalando dependencias basicas...
+    %PYTHON_CMD% -m pip install streamlit flask flask-cors pandas
+    if errorlevel 1 goto fin_error
+    echo.
+)
+
+echo [+] Iniciando aplicacion (Streamlit + API de base de datos)...
+echo [+] El navegador se abrira automaticamente.
+echo [+] Para cerrar el servidor: Ctrl+C en esta ventana.
+echo.
+
 %PYTHON_CMD% -m streamlit run app_streamlit.py
 
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Hubo un problema al ejecutar Streamlit.
-    echo.
-    pause
+echo.
+if errorlevel 1 (
+    echo [ERROR] Streamlit termino con un error.
+) else (
+    echo [INFO] La aplicacion se cerro.
 )
+goto fin
+
+:fin_error
+echo.
+
+:fin
+echo Presione una tecla para cerrar esta ventana...
+pause >nul
+endlocal

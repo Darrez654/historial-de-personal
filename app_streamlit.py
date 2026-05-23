@@ -1,9 +1,14 @@
+# pyrefly: ignore [missing-import]
 import streamlit as st
+# pyrefly: ignore [missing-import]
 import streamlit.components.v1 as components
 import json
 import os
+import threading
 import pandas as pd
-from datetime import datetime
+
+import database as db
+from api_server import API_PORT, start_api_server
 
 # Configuración de la página de Streamlit
 st.set_page_config(
@@ -48,8 +53,88 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Directorio del proyecto
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def ensure_api_server():
+    if "api_thread_started" not in st.session_state:
+        db.init_db()
+        thread = threading.Thread(target=start_api_server, daemon=True)
+        thread.start()
+        st.session_state.api_thread_started = True
+
+# ==========================================================================
+# MAPEO ENTRE STREAMLIT STATE Y FORMATO JSON DHP
+# ==========================================================================
+def load_json_to_streamlit_state(data):
+    st.session_state.dhp_photo = data.get("photo", "")
+    st.session_state.dhp_theme = data.get("theme", "light")
+    st.session_state.simple_fields = data.get('simpleFields', {}).copy()
+    
+    # 2. Convertir educacion de estructura JSON a simpleFields
+    education_data = data.get('education', {})
+    for stage_key, fields in education_data.items():
+        for field_name, value in fields.items():
+            st.session_state.simple_fields[f'f_edu_{field_name}_{stage_key}'] = value
+            
+    # 3. Cargar tablas dinámicas
+    dynamic_tables = data.get('dynamicTables', {})
+    
+    fam_cols = ['primer_apellido', 'segundo_apellido', 'primer_nombre', 'segundo_nombre', 'civ']
+    fam_data = dynamic_tables.get('familiares', [])
+    st.session_state.df_familiares = pd.DataFrame(fam_data) if fam_data else pd.DataFrame(columns=fam_cols, data=[[""] * len(fam_cols)])
+    
+    ext_cols = ['nombre_apellido', 'ci', 'parentesco', 'edad', 'direccion']
+    ext_data = dynamic_tables.get('familiaresExterior', [])
+    st.session_state.df_fam_exterior = pd.DataFrame(ext_data) if ext_data else pd.DataFrame(columns=ext_cols, data=[[""] * len(ext_cols)])
+    
+    viajes_cols = ['desde', 'hasta', 'pais', 'motivo', 'direccion']
+    viajes_data = dynamic_tables.get('viajes', [])
+    st.session_state.df_viajes = pd.DataFrame(viajes_data) if viajes_data else pd.DataFrame(columns=viajes_cols, data=[[""] * len(viajes_cols)])
+    
+    laboral_cols = ['desde', 'hasta', 'cargo', 'empresa', 'motivo']
+    laboral_data = dynamic_tables.get('laboral', [])
+    st.session_state.df_laboral = pd.DataFrame(laboral_data) if laboral_data else pd.DataFrame(columns=laboral_cols, data=[[""] * len(laboral_cols)])
+    
+    social_cols = ['organizacion', 'direccion', 'actividades']
+    social_data = dynamic_tables.get('social', [])
+    st.session_state.df_social = pd.DataFrame(social_data) if social_data else pd.DataFrame(columns=social_cols, data=[[""] * len(social_cols)])
+
+def compile_streamlit_state_to_json():
+    # 1. Separar campos de educacion de simpleFields
+    simple_fields = {}
+    education = {}
+    
+    for k, v in st.session_state.simple_fields.items():
+        if k.startswith('f_edu_'):
+            parts = k.split('_')
+            if len(parts) >= 4:
+                field_name = parts[2]
+                stage_key = parts[3]
+                if stage_key not in education:
+                    education[stage_key] = {}
+                education[stage_key][field_name] = v
+        else:
+            simple_fields[k] = v
+            
+    # 2. Obtener tablas dinámicas
+    dynamic_tables = {
+        "familiares": st.session_state.df_familiares.to_dict('records') if 'df_familiares' in st.session_state else [],
+        "familiaresExterior": st.session_state.df_fam_exterior.to_dict('records') if 'df_fam_exterior' in st.session_state else [],
+        "viajes": st.session_state.df_viajes.to_dict('records') if 'df_viajes' in st.session_state else [],
+        "laboral": st.session_state.df_laboral.to_dict('records') if 'df_laboral' in st.session_state else [],
+        "social": st.session_state.df_social.to_dict('records') if 'df_social' in st.session_state else []
+    }
+    
+    photo = st.session_state.get("dhp_photo", "")
+    theme = st.session_state.get("dhp_theme", "light")
+    return {
+        "photo": photo,
+        "theme": theme,
+        "simpleFields": simple_fields,
+        "dynamicTables": dynamic_tables,
+        "education": education,
+    }
 
 def get_self_contained_html():
     """Lee index.html, style.css y app.js y los fusiona en un solo string HTML autocontenido."""
@@ -67,24 +152,95 @@ def get_self_contained_html():
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
             
+        # Inyectar datos precargados si existen en el estado de Streamlit
+        preloaded_script = ""
+        if 'loaded_dhp_data' in st.session_state and st.session_state.loaded_dhp_data:
+            json_str = json.dumps(st.session_state.loaded_dhp_data, ensure_ascii=False)
+            preloaded_script = f"\n<script>window.PRELOADED_DHP_DATA = {json_str};</script>\n"
+            
         # Reemplazar la referencia de style.css por el CSS inyectado
         html = html.replace('<link rel="stylesheet" href="style.css">', f'<style>\n{css}\n</style>')
-        # Reemplazar la referencia de app.js por el JS inyectado
-        html = html.replace('<script src="app.js"></script>', f'<script>\n{js}\n</script>')
+        # Reemplazar la referencia de app.js por el JS inyectado y añadir datos precargados antes
+        html = html.replace('<script src="app.js"></script>', f'{preloaded_script}<script>\n{js}\n</script>')
         
         return html
     except Exception as e:
         st.error(f"Error al compilar el HTML autocontenido: {e}")
         return None
 
+def render_records_manager():
+    st.subheader("Expedientes guardados en base de datos")
+    st.caption(f"Archivo: `{db.DB_PATH}` · API local: `http://127.0.0.1:{API_PORT}`")
+
+    col_search, col_btn = st.columns([3, 1])
+    with col_search:
+        search_q = st.text_input(
+            "Buscar por cédula, nombre o apellido",
+            key="db_search_q",
+            placeholder="Ej: V-12345678 o Pérez",
+        )
+    with col_btn:
+        st.write("")
+        st.write("")
+        refresh = st.button("Actualizar listado", use_container_width=True)
+
+    if refresh or "db_search_q" in st.session_state:
+        rows = db.get_all_records(search_q.strip() if search_q else None)
+        if rows:
+            st.dataframe(
+                pd.DataFrame(
+                    rows,
+                    columns=["Cédula", "Nombre", "Apellido", "Última actualización"],
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.info("No hay expedientes que coincidan con la búsqueda.")
+
+    st.markdown("---")
+    st.markdown("#### Cargar o eliminar por cédula")
+    c1, c2, c3 = st.columns([2, 1, 1])
+    with c1:
+        cedula_load = st.text_input("Cédula del expediente", key="db_cedula_load")
+    with c2:
+        st.write("")
+        st.write("")
+        if st.button("Cargar en formulario", type="primary", use_container_width=True):
+            record = db.get_record_by_cedula(cedula_load)
+            if record:
+                load_json_to_streamlit_state(record["data"])
+                st.session_state.loaded_dhp_data = record["data"]
+                st.session_state.record_loaded_msg = (
+                    f"Expediente {record['cedula']} cargado. Revise la pestaña web o el formulario nativo."
+                )
+                st.rerun()
+            else:
+                st.error("No se encontró expediente con esa cédula.")
+    with c3:
+        st.write("")
+        st.write("")
+        if st.button("Eliminar expediente", use_container_width=True):
+            if db.delete_record(cedula_load):
+                st.success("Expediente eliminado.")
+                st.rerun()
+            else:
+                st.error("No se encontró expediente con esa cédula.")
+
+    if st.session_state.get("record_loaded_msg"):
+        st.success(st.session_state.record_loaded_msg)
+
+
 def main():
+    ensure_api_server()
+
     st.markdown('<h1 class="main-title">⚓ Armada Bolivariana - Cuerpo de Ingenieros</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Declaración de Historial Personal (DHP) — Plataforma Streamlit</p>', unsafe_allow_html=True)
 
-    # Crear pestañas para las dos opciones de visualización
-    tab_iframe, tab_native = st.tabs([
+    tab_iframe, tab_native, tab_db = st.tabs([
         "🌐 Interfaz Web Integrada (Recomendado)",
-        "🐍 Formulario Nativo Python (Edición y Exportación)"
+        "🐍 Formulario Nativo Python (Edición y Exportación)",
+        "📂 Buscar y Gestionar Expedientes",
     ])
 
     # ==========================================================================
@@ -93,8 +249,8 @@ def main():
     with tab_iframe:
         st.info(
             "💡 **Nota de Uso:** Esta pestaña ejecuta el sistema DHP con su diseño web original. "
-            "Soporta auto-guardado local en el navegador, importación/exportación de copias de seguridad en JSON, "
-            "y la visualización estricta de 4 páginas de impresión oficial."
+            "Incluye **búsqueda por cédula** y **guardado en base de datos** desde el panel lateral (requiere API en `127.0.0.1:{port}`). "
+            "También soporta auto-guardado local, respaldo JSON e impresión oficial de 4 páginas.".format(port=API_PORT)
         )
         
         html_content = get_self_contained_html()
@@ -113,9 +269,10 @@ def main():
         st.subheader("Formulario de Datos DHP")
         st.write("Complete la información utilizando componentes nativos de Streamlit.")
 
-        # Inicialización de estado para persistir datos
         if 'simple_fields' not in st.session_state:
             st.session_state.simple_fields = {}
+        if 'dhp_photo' not in st.session_state:
+            st.session_state.dhp_photo = ""
 
         # Crear un wizard con columnas o selectores
         step = st.selectbox("Seleccione el Paso del Formulario", [
@@ -126,7 +283,8 @@ def main():
             "Paso 5: Datos Sociales",
             "Paso 6: Referencias Personales",
             "Paso 7: Datos Educativos",
-            "Paso 8: Datos Administrativos e Historial"
+            "Paso 8: Datos Administrativos e Historial",
+            "Paso 9: Supervisión (Jefe Inmediato)",
         ])
 
         # --- PASO 1 ---
@@ -349,31 +507,75 @@ def main():
                 st.session_state.simple_fields['f_fre_hobby'] = st.text_input("Hobby favorito:", st.session_state.simple_fields.get('f_fre_hobby', ''))
                 st.session_state.simple_fields['f_fre_deporte'] = st.text_input("Deporte favorito y cuál practica:", st.session_state.simple_fields.get('f_fre_deporte', ''))
 
-        # Acciones de Backup / Generación de Datos en Python Nativo
+        elif step.startswith("Paso 9"):
+            st.markdown("### Supervisión — Jefe Inmediato")
+            st.caption("Espacio ampliado para uso del supervisor. Los datos se guardan en la base de datos junto al resto del formulario.")
+            st.session_state.simple_fields['f_jefe_texto'] = st.text_input(
+                "Jefe (texto libre — cargo, grado o nombre según criterio del supervisor)",
+                st.session_state.simple_fields.get('f_jefe_texto', ''),
+                help="Este texto aparece debajo de la línea de firma del Jefe Inmediato en la planilla impresa.",
+            )
+            st.session_state.simple_fields['f_jefe_observaciones'] = st.text_area(
+                "Observaciones del supervisor",
+                st.session_state.simple_fields.get('f_jefe_observaciones', ''),
+                height=200,
+                placeholder="Ingrese observaciones, recomendaciones o notas para el expediente...",
+            )
+
         st.markdown("---")
-        st.subheader("Guardar y Exportar Datos")
-        
-        # Generar JSON de Respaldo
-        full_native_state = {
-            "simpleFields": st.session_state.simple_fields,
-            "dynamicTables": {
-                "familiares": st.session_state.df_familiares.to_dict('records') if 'df_familiares' in st.session_state else [],
-                "familiaresExterior": st.session_state.df_fam_exterior.to_dict('records') if 'df_fam_exterior' in st.session_state else [],
-                "viajes": st.session_state.df_viajes.to_dict('records') if 'df_viajes' in st.session_state else [],
-                "laboral": st.session_state.df_laboral.to_dict('records') if 'df_laboral' in st.session_state else [],
-                "social": st.session_state.df_social.to_dict('records') if 'df_social' in st.session_state else []
-            }
-        }
-        
+        st.subheader("Guardar, buscar y exportar")
+
+        cedula_val = st.session_state.simple_fields.get('f_cedula', '').strip()
+        nombre_val = st.session_state.simple_fields.get('f_primer_nombre', '').strip()
+        apellido_val = st.session_state.simple_fields.get('f_primer_apellido', '').strip()
+
+        col_photo, col_save = st.columns([1, 2])
+        with col_photo:
+            photo_file = st.file_uploader("Foto carnet (opcional en formulario nativo)", type=["png", "jpg", "jpeg"])
+            if photo_file is not None:
+                import base64
+                b64 = base64.b64encode(photo_file.read()).decode("utf-8")
+                mime = photo_file.type or "image/jpeg"
+                st.session_state.dhp_photo = f"data:{mime};base64,{b64}"
+            if st.session_state.dhp_photo:
+                st.image(st.session_state.dhp_photo, width=120)
+
+        with col_save:
+            if st.button("💾 Guardar en base de datos", type="primary", use_container_width=True):
+                if not cedula_val:
+                    st.error("Indique la cédula en el Paso 1 antes de guardar.")
+                else:
+                    try:
+                        payload = compile_streamlit_state_to_json()
+                        db.save_or_update_record(cedula_val, nombre_val, apellido_val, payload)
+                        st.session_state.loaded_dhp_data = payload
+                        st.success(f"Expediente guardado/actualizado para cédula {cedula_val.upper()}.")
+                    except Exception as e:
+                        st.error(f"Error al guardar: {e}")
+
+            busqueda_cedula = st.text_input("Buscar expediente por cédula", key="native_search_cedula")
+            if st.button("🔍 Cargar expediente", use_container_width=True):
+                record = db.get_record_by_cedula(busqueda_cedula)
+                if record:
+                    load_json_to_streamlit_state(record["data"])
+                    st.session_state.loaded_dhp_data = record["data"]
+                    st.success(f"Cargado: {record['cedula']} — {record['nombre']} {record['apellido']}")
+                    st.rerun()
+                else:
+                    st.warning("No se encontró expediente con esa cédula.")
+
+        full_native_state = compile_streamlit_state_to_json()
         json_str = json.dumps(full_native_state, indent=2, ensure_ascii=False)
         st.download_button(
-            label="💾 Descargar Respaldo de Datos (JSON)",
+            label="📥 Descargar respaldo JSON",
             data=json_str,
-            file_name="respaldo_dhp.json",
-            mime="application/json"
+            file_name=f"DHP_{cedula_val or 'borrador'}.json",
+            mime="application/json",
         )
-        
-        st.write("Para generar e imprimir la planilla oficial, por favor utilice la **Pestaña 1 (Interfaz Web Integrada)**, la cual tiene soporte de impresión de 4 páginas pixel-perfect optimizado con estilos CSS.")
+        st.write("Para imprimir la planilla oficial de 4 páginas use la **pestaña Interfaz Web Integrada**.")
+
+    with tab_db:
+        render_records_manager()
 
 if __name__ == "__main__":
     main()

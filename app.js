@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE = 'http://127.0.0.1:8765';
+
     // ==========================================================================
     // SELECCIÓN DE ELEMENTOS DEL DOM
     // ==========================================================================
@@ -22,6 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatarPreviewBox = document.getElementById('avatar-preview-box');
     const printAvatarImg = document.getElementById('print-avatar-img');
     const printPhotoBox = document.getElementById('print-photo-box');
+
+    const btnDbSearch = document.getElementById('btn-db-search');
+    const btnDbLoad = document.getElementById('btn-db-load');
+    const btnDbSave = document.getElementById('btn-db-save');
+    const dbSearchCedula = document.getElementById('db-search-cedula');
+    const dbSearchResults = document.getElementById('db-search-results');
+    const dbStatusMsg = document.getElementById('db-status-msg');
     
     let currentStep = 1;
     let photoBase64 = "";
@@ -367,7 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             'f_fre_sitios': 'p_fre_sitios',
             'f_fre_hobby': 'p_fre_hobby',
-            'f_fre_deporte': 'p_fre_deporte'
+            'f_fre_deporte': 'p_fre_deporte',
+
+            'f_jefe_texto': 'p_jefe_texto',
+            'f_jefe_observaciones': 'p_jefe_observaciones'
         };
 
         // Transferir texto plano
@@ -641,7 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
             'f_adm_posee_arma', 'f_arma_marca', 'f_arma_modelo', 'f_arma_serial', 'f_arma_permiso',
             'f_seg_detenido', 'f_det_causa', 'f_det_cuerpo', 'f_det_fecha', 'f_det_lugar',
             'f_seg_partido', 'f_part_especifique', 'f_part_lugar', 'f_seg_incidente',
-            'f_fre_sitios', 'f_fre_hobby', 'f_fre_deporte'
+            'f_fre_sitios', 'f_fre_hobby', 'f_fre_deporte',
+            'f_jefe_texto', 'f_jefe_observaciones'
         ];
 
         simpleInputIds.forEach(id => {
@@ -779,6 +792,125 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function tryLoadPreloadedFromServer() {
+        if (window.PRELOADED_DHP_DATA) {
+            loadFormState(window.PRELOADED_DHP_DATA);
+            saveDataToLocalStorage();
+            setDbStatus('Expediente cargado desde el servidor.', 'success');
+        }
+    }
+
+    // ==========================================================================
+    // API — BASE DE DATOS (GUARDAR, BUSCAR, CARGAR)
+    // ==========================================================================
+
+    function setDbStatus(message, type = 'info') {
+        if (!dbStatusMsg) return;
+        dbStatusMsg.textContent = message;
+        dbStatusMsg.className = 'db-status-msg';
+        if (type === 'success') dbStatusMsg.classList.add('status-success');
+        if (type === 'error') dbStatusMsg.classList.add('status-error');
+    }
+
+    function renderDbSearchResults(records) {
+        if (!dbSearchResults) return;
+        dbSearchResults.innerHTML = '';
+        if (!records || records.length === 0) {
+            dbSearchResults.innerHTML = '<p class="db-empty">Sin resultados.</p>';
+            return;
+        }
+        records.forEach(rec => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'db-result-item';
+            item.innerHTML = `<strong>${rec.cedula}</strong><span>${rec.nombre} ${rec.apellido}</span>`;
+            item.addEventListener('click', () => {
+                dbSearchCedula.value = rec.cedula;
+                loadRecordFromDatabase(rec.cedula);
+            });
+            dbSearchResults.appendChild(item);
+        });
+    }
+
+    async function searchRecordsInDatabase() {
+        const q = dbSearchCedula.value.trim();
+        try {
+            const url = q ? `${API_BASE}/api/records?q=${encodeURIComponent(q)}` : `${API_BASE}/api/records`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('No se pudo conectar con la API.');
+            const data = await res.json();
+            renderDbSearchResults(data.records || []);
+            setDbStatus(`${(data.records || []).length} expediente(s) encontrado(s).`, 'success');
+        } catch (err) {
+            setDbStatus('API no disponible. Ejecute la app con Streamlit (inicia el servidor automáticamente).', 'error');
+            renderDbSearchResults([]);
+        }
+    }
+
+    async function loadRecordFromDatabase(cedula) {
+        const id = (cedula || dbSearchCedula.value).trim();
+        if (!id) {
+            alert('Indique una cédula para cargar el expediente.');
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE}/api/records/${encodeURIComponent(id)}`);
+            const data = await res.json();
+            if (!res.ok) {
+                setDbStatus(data.error || 'Expediente no encontrado.', 'error');
+                return;
+            }
+            loadFormState(data.data);
+            saveDataToLocalStorage();
+            setDbStatus(`Cargado: ${data.cedula} — ${data.nombre} ${data.apellido}`, 'success');
+            showStep(1);
+        } catch (err) {
+            setDbStatus('Error al cargar. Verifique que Streamlit y la API estén en ejecución.', 'error');
+        }
+    }
+
+    async function saveRecordToDatabase() {
+        const state = compileFormState();
+        const cedula = (state.simpleFields.f_cedula || '').trim();
+        const nombre = (state.simpleFields.f_primer_nombre || '').trim();
+        const apellido = (state.simpleFields.f_primer_apellido || '').trim();
+
+        if (!cedula) {
+            alert('Complete la cédula (Paso 1) antes de guardar en la base de datos.');
+            showStep(1);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/api/records`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cedula, nombre, apellido, data: state })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setDbStatus(data.error || 'No se pudo guardar.', 'error');
+                return;
+            }
+            setDbStatus(`Guardado en base de datos: ${cedula.toUpperCase()}`, 'success');
+            saveDataToLocalStorage();
+        } catch (err) {
+            setDbStatus('Error al guardar. Inicie la aplicación con Streamlit.', 'error');
+        }
+    }
+
+    if (btnDbSearch) btnDbSearch.addEventListener('click', searchRecordsInDatabase);
+    if (btnDbLoad) btnDbLoad.addEventListener('click', () => loadRecordFromDatabase());
+    if (btnDbSave) btnDbSave.addEventListener('click', saveRecordToDatabase);
+    if (dbSearchCedula) {
+        dbSearchCedula.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loadRecordFromDatabase();
+            }
+        });
+    }
+
 
     // ==========================================================================
     // EXPORTAR E IMPORTAR COPIAS DE SEGURIDAD (RESPALDO JSON)
@@ -857,6 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
 
     tryLoadFromLocalStorage();
+    tryLoadPreloadedFromServer();
 
     // Evento de impresión
     btnPrint.addEventListener('click', () => {

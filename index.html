@@ -88,8 +88,33 @@
                             <span class="step-desc">Bienes, Armas y Detalle</span>
                         </div>
                     </li>
+                    <li class="step-item" data-step="9">
+                        <div class="step-icon">9</div>
+                        <div class="step-details">
+                            <span class="step-title">Supervisión</span>
+                            <span class="step-desc">Jefe Inmediato</span>
+                        </div>
+                    </li>
                 </ul>
             </nav>
+
+            <!-- Búsqueda en base de datos -->
+            <div class="db-search-panel">
+                <h3 class="db-panel-title">Base de datos</h3>
+                <div class="form-group">
+                    <label for="db-search-cedula">Buscar por cédula</label>
+                    <input type="text" id="db-search-cedula" placeholder="Ej: V-12345678" autocomplete="off">
+                </div>
+                <div class="db-search-actions">
+                    <button type="button" id="btn-db-search" class="btn-utility btn-db-primary" title="Buscar expedientes">Buscar</button>
+                    <button type="button" id="btn-db-load" class="btn-utility btn-db-primary" title="Cargar expediente">Cargar</button>
+                </div>
+                <button type="button" id="btn-db-save" class="btn-db-save" title="Guardar formulario completo en BD">
+                    Guardar en base de datos
+                </button>
+                <div id="db-search-results" class="db-search-results" aria-live="polite"></div>
+                <p id="db-status-msg" class="db-status-msg"></p>
+            </div>
 
             <!-- Acciones Rápidas -->
             <div class="sidebar-footer">
@@ -761,6 +786,31 @@
                     </div>
                 </div>
 
+                <!-- PASO 9: SUPERVISIÓN — JEFE INMEDIATO -->
+                <div class="form-step" data-step="9">
+                    <div class="card glass supervisor-card">
+                        <div class="card-header">
+                            <span class="step-badge">Paso 9 de 9</span>
+                            <h2>9) Supervisión — Jefe Inmediato</h2>
+                            <p>Sección ampliada para el supervisor. Complete el jefe y las observaciones; se guardan en la base de datos y en la planilla impresa.</p>
+                        </div>
+                        <div class="card-body supervisor-card-body">
+                            <div class="supervisor-signature-preview">
+                                <div class="supervisor-sig-line"></div>
+                                <span class="supervisor-sig-label">Jefe Inmediato (firma en planilla impresa)</span>
+                            </div>
+                            <div class="form-group supervisor-jefe-field">
+                                <label for="f_jefe_texto">Jefe <span class="field-hint">(texto libre a criterio del supervisor)</span></label>
+                                <input type="text" id="f_jefe_texto" placeholder="Ej: CF. Juan Pérez — Director de Personal">
+                            </div>
+                            <div class="form-group">
+                                <label for="f_jefe_observaciones">Observaciones del supervisor</label>
+                                <textarea id="f_jefe_observaciones" rows="8" placeholder="Ingrese observaciones, recomendaciones o notas para el expediente..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Botones de Navegación del Wizard -->
                 <div class="wizard-buttons">
                     <button type="button" id="btn-prev" class="btn-secondary" style="display: none;">
@@ -1377,6 +1427,28 @@
                 </div>
             </div>
 
+            <!-- Jefe Inmediato (separado de huellas) -->
+            <div class="print-jefe-section">
+                <div class="print-signatures-row print-jefe-signature-row">
+                    <div class="signature-block print-jefe-signature-block">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Jefe Inmediato</div>
+                    </div>
+                </div>
+                <table class="grid-table cell-padding-xs border-b-none">
+                    <tr class="row-h-sm">
+                        <td class="col-15 bg-gray font-xxs text-bold">Jefe:</td>
+                        <td id="p_jefe_texto" class="col-85 font-xs text-upper text-left cell-padding-l"></td>
+                    </tr>
+                </table>
+                <div class="print-jefe-obs-block">
+                    <div class="print-jefe-obs-label">Observaciones:</div>
+                    <div id="p_jefe_observaciones" class="print-jefe-obs-content font-xs text-upper"></div>
+                </div>
+            </div>
+
+            <div class="print-section-spacer" aria-hidden="true"></div>
+
             <!-- Huellas Dactilares -->
             <div class="print-fingerprints-box">
                 <div class="fingerprint-item">
@@ -1391,32 +1463,12 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN DE APROBACIÓN Y SEGURIDAD (Jefe Inmediato, Observaciones y Inteligencia/Contrainteligencia) -->
-            <div class="print-approval-section" style="margin-top: 0.4cm; border-top: 1px dashed #000; padding-top: 0.3cm;">
-                <!-- Firma Jefe Inmediato -->
-                <div class="print-signatures-row" style="justify-content: center; margin-top: 0.2cm; margin-bottom: 0.3cm;">
-                    <div class="signature-block" style="width: 6.5cm; margin: 0 auto; text-align: center;">
-                        <div class="sig-line" style="border-bottom: 1.5px solid #000; height: 1px; margin-bottom: 4px;"></div>
-                        <div class="sig-label" style="font-size: 8pt; font-weight: bold;">Jefe Inmediato</div>
-                    </div>
-                </div>
-
-                <!-- Líneas de Observaciones -->
-                <div class="print-obs-lines-block" style="margin: 0.3cm 0; font-size: 8pt; font-weight: bold; text-align: left;">
-                    <div style="display: flex; align-items: flex-end; margin-bottom: 6px;">
-                        <span style="white-space: nowrap; margin-right: 5px; font-weight: bold;">Observaciones:</span>
-                        <div style="flex-grow: 1; border-bottom: 1px solid #000; height: 12px;"></div>
-                    </div>
-                    <div style="border-bottom: 1px solid #000; height: 16px; margin-bottom: 6px;"></div>
-                    <div style="border-bottom: 1px solid #000; height: 16px; margin-bottom: 6px;"></div>
-                    <div style="border-bottom: 1px solid #000; height: 16px; margin-bottom: 6px;"></div>
-                </div>
-
-                <!-- Firma División de Inteligencia y Contrainteligencia -->
-                <div class="print-signatures-row" style="justify-content: center; margin-top: 0.4cm; margin-bottom: 0.2cm;">
-                    <div class="signature-block" style="width: 8.5cm; margin: 0 auto; text-align: center;">
-                        <div class="sig-line" style="border-bottom: 1.5px solid #000; height: 1px; margin-bottom: 4px;"></div>
-                        <div class="sig-label" style="font-size: 8pt; font-weight: bold;">División de Inteligencia y Contrainteligencia</div>
+            <!-- División de Inteligencia y Contrainteligencia -->
+            <div class="print-intel-section">
+                <div class="print-signatures-row print-intel-signature-row">
+                    <div class="signature-block print-intel-signature-block">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">División de Inteligencia y Contrainteligencia</div>
                     </div>
                 </div>
             </div>
