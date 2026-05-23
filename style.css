@@ -1048,4 +1048,359 @@ body {
 
     /* 2. Forzar visualización de la planilla oficial */
     body {
-        background
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Inter', Arial, sans-serif !important;
+    }
+
+    .printable-sheet {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Ajustar tamaño carta */
+    @page {
+        size: letter;
+        margin: 0.8cm 1cm 0.8cm 1cm;
+    }
+
+    /* 3. Estructuración estricta de páginas */
+    .print-page {
+        width: 100% !important;
+        height: 25.5cm !important; /* Ajustado para caber perfectamente en letter sin salirse */
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* El último elemento no fuerza salto */
+    .print-page:last-child {
+        page-break-after: avoid !important;
+    }
+
+    /* 4. Encabezado Oficial */
+    .print-header {
+        display: grid;
+        grid-template-columns: 85px 1fr 100px;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
+    }
+
+    .header-photo-box {
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .photo-placeholder-print {
+        width: 80px;
+        height: 100px;
+        border: 2px solid #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .photo-txt {
+        font-size: 8pt;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .photo-img-print {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .header-text-print {
+        text-align: center;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .rep-title { font-size: 9pt; }
+    .min-title { font-size: 7.5pt; }
+    .arm-title { font-size: 8.5pt; }
+    .ing-title { font-size: 7.5pt; text-decoration: underline; }
+    .com-title { font-size: 8pt; text-decoration: underline; }
+
+    .header-number-box {
+        text-align: right;
+        font-weight: bold;
+        font-size: 10pt;
+    }
+
+    .document-title-box {
+        text-align: center;
+        margin: 5px 0;
+    }
+
+    .main-doc-title {
+        font-size: 13pt;
+        font-weight: bold;
+        text-decoration: underline;
+        letter-spacing: 0.5px;
+    }
+
+    /* Instrucciones */
+    .print-instructions {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: 8px;
+        font-size: 7.5pt;
+    }
+
+    .inst-heading {
+        font-size: 8.5pt;
+        font-weight: bold;
+        margin-bottom: 3px;
+    }
+
+    .inst-list {
+        margin-left: 15px;
+    }
+
+    .inst-list li {
+        margin-bottom: 1px;
+    }
+
+    /* 5. Tablas y Rejillas de Datos */
+    .print-section {
+        margin-bottom: 6px;
+    }
+
+    .print-section-title {
+        font-size: 8.5pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 4px 0 2px 0;
+    }
+
+    .print-subsection-title {
+        font-size: 7.5pt;
+        font-weight: bold;
+        margin: 3px 0 1px 0;
+    }
+
+    .grid-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+    }
+
+    .grid-table td, 
+    .grid-table th {
+        border: 1px solid #000 !important;
+        vertical-align: middle;
+        box-sizing: border-box;
+    }
+
+    /* Alturas y Espaciados Estrictos */
+    .cell-padding-sm td {
+        padding: 3px 4px !important;
+    }
+
+    .cell-padding-xs td,
+    .cell-padding-xs th {
+        padding: 2px 3px !important;
+    }
+
+    .row-h-sm {
+        height: 18px !important;
+    }
+
+    .row-h-md {
+        height: 25px !important;
+    }
+
+    .row-h-lg {
+        height: 40px !important;
+    }
+
+    /* Anchos de columnas */
+    .col-8 { width: 8%; }
+    .col-10 { width: 10%; }
+    .col-12 { width: 12%; }
+    .col-15 { width: 15%; }
+    .col-16 { width: 16%; }
+    .col-18 { width: 18%; }
+    .col-20 { width: 20%; }
+    .col-22 { width: 22%; }
+    .col-24 { width: 24%; }
+    .col-25 { width: 25%; }
+    .col-30 { width: 30%; }
+    .col-33 { width: 33.33%; }
+    .col-34 { width: 34%; }
+    .col-35 { width: 35%; }
+    .col-40 { width: 40%; }
+    .col-45 { width: 45%; }
+    .col-50 { width: 50%; }
+    .col-55 { width: 55%; }
+    .col-60 { width: 60%; }
+    .col-70 { width: 70%; }
+    .col-85 { width: 85%; }
+
+    /* Estilos de Celda */
+    .bg-gray {
+        background-color: #e5e7eb !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .bg-light {
+        background-color: #f3f4f6 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .bg-white {
+        background-color: #ffffff !important;
+    }
+
+    .cell-center { text-align: center !important; }
+    .cell-right { text-align: right !important; }
+    .cell-left { text-align: left !important; }
+    .cell-padding-l { padding-left: 6px !important; }
+    .valign-top { vertical-align: top !important; }
+
+    .text-bold { font-weight: bold !important; }
+    .text-normal { font-weight: normal !important; }
+    .text-upper { text-transform: uppercase !important; }
+
+    /* Tamaños de Fuente para Impresión */
+    .font-sm { font-size: 8.5pt !important; }
+    .font-xs { font-size: 7.5pt !important; }
+    .font-xxs { font-size: 6.5pt !important; }
+    .font-bold { font-weight: bold !important; }
+
+    /* Bordes Especiales */
+    .border-t-none { border-top: none !important; }
+    .border-b-none { border-bottom: none !important; }
+    .border-t-grid { border-top: 1px solid #000 !important; }
+
+    .display-block { display: block !important; }
+    .mt-1 { margin-top: 2px !important; }
+
+    /* Checkboxes de Impresión */
+    .checkbox-container {
+        margin: 0 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .check-box {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid #000;
+        vertical-align: middle;
+        text-align: center;
+        line-height: 10px;
+        font-size: 8pt;
+        font-weight: bold;
+    }
+
+    /* 6. Bloque de Observaciones */
+    .print-observations-box {
+        border: 1px solid #000;
+        padding: 5px 8px;
+        margin-top: 8px;
+        margin-bottom: 12px;
+    }
+
+    .obs-title {
+        font-size: 8.5pt;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .obs-paragraph {
+        font-size: 6.8pt;
+        line-height: 1.35;
+        text-align: justify;
+    }
+
+    /* 7. Bloque de Firmas */
+    .print-signatures-row {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 1.5cm;
+        margin-bottom: 1.2cm;
+    }
+
+    .signature-block, 
+    .date-block {
+        width: 4.5cm;
+        text-align: center;
+    }
+
+    .sig-line {
+        border-bottom: 1.5px solid #000;
+        height: 1px;
+        margin-bottom: 4px;
+    }
+
+    .sig-label {
+        font-size: 8pt;
+        font-weight: bold;
+    }
+
+    /* 8. Huellas Dactilares */
+    .print-fingerprints-box {
+        display: flex;
+        justify-content: center;
+        gap: 1.5cm;
+        margin-top: auto; /* Empuja las huellas hacia abajo en la última página */
+        margin-bottom: 10px;
+    }
+
+    .fingerprint-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .fp-title {
+        font-size: 7.5pt;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .fp-box {
+        width: 1.5cm;
+        height: 2cm;
+        border: 1.5px solid #000;
+        background-color: #fff;
+    }
+
+    .fp-desc {
+        font-size: 6.5pt;
+        margin-top: 3px;
+    }
+
+    /* 9. Footer de Página de Impresión */
+    .print-footer {
+        border-top: 1px solid #000;
+        padding-top: 4px;
+        margin-top: auto; /* Empuja el pie de página hacia el fondo de cada bloque .print-page */
+        text-align: center;
+        font-size: 7.5pt;
+        font-weight: bold;
+    }
+}
