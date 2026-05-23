@@ -6,7 +6,7 @@ st.set_page_config(
     page_title="DHP - Sistema de Declaración de Historial Personal",
     page_icon="⚓",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # pyrefly: ignore [missing-import]
@@ -19,42 +19,133 @@ import pandas as pd
 import database as db
 from api_server import API_PORT, start_api_server
 
-# Estilo personalizado para la interfaz de Streamlit
-st.markdown("""
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Altura del iframe ≈ viewport (fallback si el CSS del host no aplica)
+IFRAME_VIEWPORT_HEIGHT = 1080
+
+DHP_EMBED_CSS = """
+<style id="dhp-streamlit-embed-patch">
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+    html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100vh;
+        margin: 0;
+        overflow-x: hidden;
+    }
+    .app-layout {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100vh;
+    }
+    .sidebar {
+        height: 100vh;
+    }
+    .main-content {
+        min-height: 100vh;
+    }
+</style>
+"""
+
+STREAMLIT_FULLSCREEN_CSS = """
 <style>
-    .main-title {
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    .stApp {
+        background: linear-gradient(180deg, #e8edf4 0%, #f3f4f6 100%);
+    }
+
+    header[data-testid="stHeader"] {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+    }
+
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"] {
+        display: none;
+    }
+
+    section.main > div.block-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-top: 0.75rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    [data-testid="stAppViewContainer"] .main {
+        width: 100%;
+    }
+
+    .dhp-app-header {
+        margin: 0 0 0.35rem 0;
+        padding: 0.35rem 0.5rem 0.5rem;
+    }
+    .dhp-app-header .main-title {
         color: #1E3A8A;
         font-family: 'Outfit', sans-serif;
         font-weight: 700;
-        margin-bottom: 0px;
+        font-size: 1.35rem;
+        margin: 0;
+        line-height: 1.2;
     }
-    .sub-title {
+    .dhp-app-header .sub-title {
         color: #4B5563;
         font-family: 'Inter', sans-serif;
-        font-size: 1.1rem;
-        margin-bottom: 25px;
+        font-size: 0.9rem;
+        margin: 0.15rem 0 0;
     }
+
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
+        height: 44px;
         background-color: #F3F4F6;
-        border-radius: 8px 8px 0px 0px;
-        gap: 8px;
-        padding-left: 20px;
-        padding-right: 20px;
+        border-radius: 8px 8px 0 0;
+        padding: 0 16px;
         font-weight: 600;
+        font-size: 0.9rem;
     }
     .stTabs [aria-selected="true"] {
         background-color: #1E3A8A !important;
         color: white !important;
     }
-</style>
-""", unsafe_allow_html=True)
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 0.35rem;
+    }
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+    /* Iframe DHP a pantalla casi completa (pestaña Interfaz Web) */
+    [data-testid="stHtml"] {
+        width: 100%;
+    }
+    [data-testid="stHtml"] iframe {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: calc(100vh - 5.5rem) !important;
+        min-height: 720px !important;
+        border: none !important;
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+        background: #fff;
+    }
+
+    footer, #MainMenu {
+        visibility: hidden;
+        height: 0;
+    }
+</style>
+"""
+
+
+def apply_streamlit_layout_styles():
+    st.markdown(STREAMLIT_FULLSCREEN_CSS, unsafe_allow_html=True)
+
+
+apply_streamlit_layout_styles()
 
 
 def ensure_api_server():
@@ -159,8 +250,11 @@ def get_self_contained_html():
             json_str = json.dumps(st.session_state.loaded_dhp_data, ensure_ascii=False)
             preloaded_script = f"\n<script>window.PRELOADED_DHP_DATA = {json_str};</script>\n"
             
-        # Reemplazar la referencia de style.css por el CSS inyectado
-        html = html.replace('<link rel="stylesheet" href="style.css">', f'<style>\n{css}\n</style>')
+        # Reemplazar la referencia de style.css por el CSS inyectado + parche embed Streamlit
+        html = html.replace(
+            '<link rel="stylesheet" href="style.css">',
+            f'<style>\n{css}\n</style>\n{DHP_EMBED_CSS}',
+        )
         # Reemplazar la referencia de app.js por el JS inyectado y añadir datos precargados antes
         html = html.replace('<script src="app.js"></script>', f'{preloaded_script}<script>\n{js}\n</script>')
         
@@ -232,36 +326,48 @@ def render_records_manager():
         st.success(st.session_state.record_loaded_msg)
 
 
+def render_integrated_web_app():
+    """Interfaz web local embebida a ancho y alto de viewport."""
+    with st.expander("Ayuda — base de datos e impresión", expanded=False):
+        st.markdown(
+            f"Interfaz **igual a la versión local** (sidebar + formulario + impresión 4 páginas). "
+            f"**Guardar/buscar en BD** requiere la API en `127.0.0.1:{API_PORT}` "
+            f"(al ejecutar con `iniciar_streamlit.bat` se inicia sola; en Streamlit Cloud use respaldo JSON)."
+        )
+
+    html_content = get_self_contained_html()
+    if not html_content:
+        st.error("No se pudo cargar la interfaz web. Verifique index.html, style.css y app.js.")
+        return
+
+    components.html(
+        html_content,
+        height=IFRAME_VIEWPORT_HEIGHT,
+        scrolling=False,
+    )
+
+
 def main():
     ensure_api_server()
 
-    st.markdown('<h1 class="main-title">⚓ Armada Bolivariana - Cuerpo de Ingenieros</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Declaración de Historial Personal (DHP) — Plataforma Streamlit</p>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="dhp-app-header">
+            <h1 class="main-title">⚓ Armada Bolivariana — Cuerpo de Ingenieros</h1>
+            <p class="sub-title">Declaración de Historial Personal (DHP)</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     tab_iframe, tab_native, tab_db = st.tabs([
-        "🌐 Interfaz Web Integrada (Recomendado)",
-        "🐍 Formulario Nativo Python (Edición y Exportación)",
-        "📂 Buscar y Gestionar Expedientes",
+        "🌐 Interfaz Web (pantalla completa)",
+        "🐍 Formulario nativo",
+        "📂 Expedientes",
     ])
 
-    # ==========================================================================
-    # PESTAÑA 1: APLICACIÓN WEB INTEGRADA (HTML/JS COMPLETO)
-    # ==========================================================================
     with tab_iframe:
-        st.info(
-            "💡 **Nota de Uso:** Esta pestaña ejecuta el sistema DHP con su diseño web original. "
-            "Incluye **búsqueda por cédula** y **guardado en base de datos** desde el panel lateral (requiere API en `127.0.0.1:{port}`). "
-            "También soporta auto-guardado local, respaldo JSON e impresión oficial de 4 páginas.".format(port=API_PORT)
-        )
-        
-        html_content = get_self_contained_html()
-        
-        if html_content:
-            # Renderizar el HTML en Streamlit dentro de un Iframe
-            # Se le asigna un alto generoso para interactuar de forma cómoda
-            components.html(html_content, height=900, scrolling=True)
-        else:
-            st.error("No se pudo cargar la interfaz web. Verifique que index.html, style.css y app.js existan en la misma carpeta.")
+        render_integrated_web_app()
 
     # ==========================================================================
     # PESTAÑA 2: FORMULARIO NATIVO DE STREAMLIT (CON EXPORTACIÓN A HTML IMPRIMIBLE)
