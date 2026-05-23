@@ -1175,8 +1175,9 @@ body {
 
 /* Tablets y laptops pequeñas (≤ 1024px) */
 @media (max-width: 1024px) {
-    .app-layout {
+        .app-layout {
         flex-direction: column;
+        min-height: 100vh;
     }
     .sidebar {
         width: 100%;
@@ -1259,8 +1260,12 @@ body {
         font-size: 0.6rem;
     }
     
-    .main-content {
+        .main-content {
         padding: 1rem;
+        min-height: 100vh;
+    }
+    .form-wizard {
+        min-height: 60vh;
     }
     
     .content-header {
@@ -1383,8 +1388,12 @@ body {
         display: none;
     }
     
-    .main-content {
+        .main-content {
         padding: 0.75rem;
+        min-height: 100vh;
+    }
+    .form-wizard {
+        min-height: 70vh;
     }
     
     .header-titles h1 {
