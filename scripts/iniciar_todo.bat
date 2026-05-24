@@ -1,13 +1,13 @@
 @echo off
 title DHP - Todos los Servicios
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo ============================================
 echo   DHP - Iniciando TODOS los servicios
 echo ============================================
 echo.
-echo   [1] API Local     → http://localhost:8765
-echo   [2] Streamlit     → http://localhost:8501
+echo   [1] API Local     -^> http://localhost:8765
+echo   [2] Streamlit     -^> http://localhost:8501
 echo.
 echo ============================================
 echo.
@@ -41,18 +41,14 @@ echo.
 
 :: Iniciar API en segundo plano
 echo [+] Iniciando API Local (puerto 8765)...
-start "DHP-API" cmd /c "%PYTHON_CMD% api_server.py"
-echo.
-
-:: Esperar 2 segundos para que la API arranque
+start "DHP-API" cmd /c "%PYTHON_CMD% -m app.controllers.api"
 timeout /t 2 /nobreak >nul
 
 :: Iniciar Streamlit
 echo [+] Iniciando Streamlit...
 echo [+] El navegador se abrira automaticamente.
-echo [+] Para cerrar todo: Ctrl+C en esta ventana o cierra las ventanas.
 echo.
-%PYTHON_CMD% -m streamlit run app_streamlit.py
+%PYTHON_CMD% -m streamlit run app/controllers/web.py
 
 echo.
 echo [INFO] Servicios detenidos.

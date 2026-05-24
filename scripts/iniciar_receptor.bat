@@ -1,6 +1,6 @@
 @echo off
 title DHP - RECEPTOR de datos (para tu servidor)
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo ============================================
 echo   DHP - RECEPTOR DE DATOS
@@ -48,6 +48,6 @@ echo   Endpoint:      POST /api/dhp/recibir
 echo ============================================
 echo.
 
-%PYTHON_CMD% receiver_api.py
+%PYTHON_CMD% -m receiver.server
 
 pause

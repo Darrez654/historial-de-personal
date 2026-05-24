@@ -1,9 +1,7 @@
 @echo off
 setlocal EnableExtensions
 title DHP - Sistema Historial Personal
-
-:: Siempre abrir en la carpeta donde esta este .bat
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo ============================================
 echo   DHP - Declaracion de Historial Personal
@@ -20,7 +18,7 @@ echo.
 
 set "PYTHON_CMD="
 
-:: Preferir el lanzador "py" de Windows (mas fiable que el alias de la Store)
+:: Preferir el lanzador "py" de Windows
 where py >nul 2>nul
 if %errorlevel% equ 0 (
     py -3 -c "import sys" >nul 2>nul
@@ -54,8 +52,8 @@ goto fin_error
 echo [OK] Python detectado: %PYTHON_CMD%
 echo.
 
-if not exist "app_streamlit.py" (
-    echo [ERROR] No se encuentra app_streamlit.py en esta carpeta.
+if not exist "app\controllers\web.py" (
+    echo [ERROR] No se encuentra app/controllers/web.py.
     echo Ejecute este archivo desde la carpeta del proyecto DHP.
     goto fin_error
 )
@@ -71,7 +69,7 @@ if exist requirements.txt (
     echo.
 ) else (
     echo [+] Instalando dependencias basicas...
-    %PYTHON_CMD% -m pip install streamlit flask flask-cors pandas
+    %PYTHON_CMD% -m pip install streamlit flask flask-cors pandas requests
     if errorlevel 1 goto fin_error
     echo.
 )
@@ -81,7 +79,7 @@ echo [+] El navegador se abrira automaticamente.
 echo [+] Para cerrar el servidor: Ctrl+C en esta ventana.
 echo.
 
-%PYTHON_CMD% -m streamlit run app_streamlit.py
+%PYTHON_CMD% -m streamlit run app/controllers/web.py
 
 echo.
 if errorlevel 1 (

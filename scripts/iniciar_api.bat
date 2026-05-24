@@ -1,6 +1,6 @@
 @echo off
 title DHP - Servidor API Local
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 echo ============================================
 echo   DHP - Iniciando Servidor API Local
 echo ============================================
@@ -10,5 +10,5 @@ echo   URL:    http://localhost:8765
 echo.
 echo ============================================
 echo.
-python api_server.py
+python -m app.controllers.api
 pause

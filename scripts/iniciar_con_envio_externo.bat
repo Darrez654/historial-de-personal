@@ -1,6 +1,6 @@
 @echo off
 title DHP - CON ENVIO A SERVIDOR EXTERNO
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo ============================================
 echo   DHP - CON ENVIO A SERVIDOR EXTERNO
@@ -15,10 +15,10 @@ echo.
 :: ===================================================
 :: CONFIGURACION - EDITAR SEGUN TU SERVIDOR
 :: ===================================================
-:: URL de tu servidor donde corre receiver_api.py
+:: URL de tu servidor donde corre el receptor
 set DHP_EXTERNAL_API_URL=http://localhost:5000/api/dhp/recibir
 
-:: API Key (opcional, coincide con RECEIVER_API_KEY)
+:: API Key (opcional, coincide con RECEIVER_API_KEY del receptor)
 set DHP_EXTERNAL_API_KEY=mi-clave-secreta
 
 :: Activar envio externo
@@ -56,12 +56,12 @@ echo.
 
 :: Iniciar API en segundo plano (con las variables de entorno)
 echo [+] Iniciando API Local (reenvio externo ACTIVADO)...
-start "DHP-API" cmd /c "%PYTHON_CMD% api_server.py"
+start "DHP-API" cmd /c "%PYTHON_CMD% -m app.controllers.api"
 timeout /t 2 /nobreak >nul
 
 :: Iniciar Streamlit
 echo [+] Iniciando Streamlit con envio externo activado...
-%PYTHON_CMD% -m streamlit run app_streamlit.py
+%PYTHON_CMD% -m streamlit run app/controllers/web.py
 
 echo.
 pause

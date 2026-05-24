@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 *.db
 .env
+.streamlit/
+
+# Bases de datos locales
+data/*.db
+logs/

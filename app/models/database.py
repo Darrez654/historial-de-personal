@@ -4,11 +4,13 @@ import os
 import sqlite3
 from datetime import datetime
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(PROJECT_DIR, "dhp_records.db")
+from app import config
+
+DB_PATH = config.get_db_path()
 
 
 def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""

