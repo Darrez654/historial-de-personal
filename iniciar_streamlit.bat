@@ -8,6 +8,13 @@ cd /d "%~dp0"
 echo ============================================
 echo   DHP - Declaracion de Historial Personal
 echo ============================================
+echo.
+echo   OTROS ACCESOS DISPONIBLES:
+echo   - iniciar_todo.bat           (API + Streamlit)
+echo   - iniciar_api.bat            (solo API)
+echo   - iniciar_receptor.bat       (servidor remoto)
+echo   - iniciar_con_envio_externo  (con envio a tu app)
+echo.
 echo Carpeta: %CD%
 echo.
 
